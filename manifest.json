@@ -1,7 +1,7 @@
 {
-  "name": "ことばの博物館 ＆ みまもりママコーチ",
-  "short_name": "ことば博物館",
-  "description": "子ども部屋の声を常時見守り、ケンカの発端と伝え方アドバイス・ことばの博物館をお母さんのスマホへ届けるPWAアプリ",
+  "name": "言い間違い博物館 ＆ みまもりママコーチ",
+  "short_name": "言い間違い博物館",
+  "description": "子ども部屋の声を常時見守り、ケンカの発端と伝え方アドバイス・言い間違い博物館をお母さんのスマホへ届けるPWAアプリ",
   "start_url": "/?view=mom",
   "display": "standalone",
   "background_color": "#FFF9F2",

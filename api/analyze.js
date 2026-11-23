@@ -1,7 +1,7 @@
 /* =========================================================
    api/analyze.js — Vercel Serverless Function & Local Analyzer
    子ども部屋の発話（テキスト＋直近バッファ）を解析し、
-   話者分離・ケンカ発端と伝え方アドバイス・ことばの博物館・
+   話者分離・ケンカ発端と伝え方アドバイス・言い間違い博物館・
    ほっこり/持ち物発見を JSON で返す。
    GEMINI_API_KEY が未設定または失敗時は内蔵エンジンへ自動フォールバック。
    ========================================================= */
@@ -274,7 +274,7 @@ export function analyzeWithRules({
           emoji: '🏛️',
           level: 'happy',
           label: `かわいい言い間違い「${entry.child}」を発見！`,
-          detail: `ことばの博物館に展示候補として届きました（写真添付もできます）`,
+          detail: `言い間違い博物館に展示候補として届きました（写真添付もできます）`,
         },
         museumItem: {
           kind: 'mispronunciation',
@@ -377,7 +377,7 @@ export function analyzeWithRules({
         emoji: '🌱',
         level: 'happy',
         label: `新しいことば「${spottedNewWords[0]}」を使えました！`,
-        detail: 'ことばの博物館「増えた言葉コーナー」に登録できます',
+        detail: '言い間違い博物館「増えた言葉コーナー」に登録できます',
       },
       museumItem: {
         kind: 'new_word',
@@ -418,7 +418,7 @@ async function analyzeWithGemini({ text, ageStage, history, activeMuseumWords })
 
   try {
     const prompt = `
-あなたは共働きのお母さんを助ける家庭内見守りAI「ことばの博物館＆ママコーチ」です。
+あなたは共働きのお母さんを助ける家庭内見守りAI「言い間違い博物館＆ママコーチ」です。
 子ども部屋で録音された直近の発話と今回の発話を解析し、必ず有効なJSONのみを返してください。
 
 条件:
