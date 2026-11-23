@@ -68,6 +68,14 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  // 言い間違い図書館の API（Vercel の関数と同じものを、ローカルでも動かす）
+  if (urlPath === '/api/detect' || urlPath === '/api/transcribe') {
+    const mod = await import(`./api/${urlPath.slice(5)}.js`);
+    await mod.default(req, res);
+    return;
+  }
+  if (urlPath === '/') { res.writeHead(302, { Location: '/museum.html' }); res.end(); return; } // Vercel と同じ入口
+
   if (urlPath === '/api/analyze') {
     if (req.method === 'POST') {
       try {

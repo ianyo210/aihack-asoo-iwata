@@ -1,5 +1,11 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "redirects": [
+    { "source": "/", "destination": "/museum.html", "permanent": false }
+  ],
+  "functions": {
+    "api/*.js": { "maxDuration": 30 }
+  },
   "headers": [
     {
       "source": "/manifest.json",

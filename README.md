@@ -38,11 +38,13 @@
    | `GEMINI_API_KEY` | Gemini による言い間違いの判定（未設定でも、辞書ルールで動く） |
    | `OPENROUTER_API_KEY`・`OPENROUTER_MODEL` | （任意）判定を OpenRouter に切り替える場合 |
 
-3. デプロイしたあと、`/room.html`（子ども側）と `/museum.html`（お父さん・お母さん側）を開きます。
+3. デプロイしたあと、トップ（`/`）を開くと図書館（`/museum.html`、お父さん・お母さん側）に移ります。子ども側は `/room.html` です。
+   - 環境変数を足したり変えたりしたあとは、**Redeploy** しないと反映されません。
+   - 動作確認: `/api/transcribe` と `/api/detect` を開くと、鍵が設定されているかが JSON で出ます（`aquaConfigured`、`llm`）。
 
-**ローカル**（`node server.mjs`、Node.js v20 以上、外部パッケージ不要）: 画面の確認用です。`http://localhost:3000/museum.html` で「例を入れる（デモ用）」を押すと、一覧や詳細を確認できます。ローカルのサーバーは `/api/transcribe` と `/api/detect` を中継しないので、**文字起こしから判定までの通し確認は、Vercel 上で行います**。
+**ローカル**（Node.js v20 以上、外部パッケージ不要）: 鍵を環境変数に入れて `node server.mjs` を起動し、`http://localhost:3000/` を開きます。Vercel と同じ `/api/transcribe` と `/api/detect` が動くので、「録音ファイルから入れる」で文字起こしから判定まで通して確かめられます。「例を入れる（デモ用）」を押すと、デモの記録と読み上げの声が入ります。
 
-**テスト**: `node --test test/mistakes.test.js`（30件）
+**テスト**: `node --test test/mistakes.test.js`（34件）
 
 ## ファイル構成
 
