@@ -9,6 +9,12 @@
 <link rel="stylesheet" href="/ui.css">
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <filter id="pencil" x="-5%" y="-20%" width="110%" height="140%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="3" result="n"/>
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="1.4" xChannelSelector="R" yChannelSelector="G"/>
+  </filter>
+</svg>
 <main class="stage">
   <div id="status" class="status" aria-live="polite">ことりは おやすみちゅう</div>
   <button id="main" class="big" type="button">

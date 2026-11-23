@@ -235,3 +235,69 @@ dl.freq dd{margin:0;font-weight:700}
   @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 }
 .paper .from{margin:8px 0 0;text-align:right;font:400 18px/34px var(--font-head);display:flex;justify-content:flex-end;align-items:center;gap:6px}
+
+/* =====================================================================
+   鉛筆の記録帳（AI っぽい囲み・影・ぼかしをやめる）。上の指定を上書きする
+   ===================================================================== */
+:root{
+  --graphite:#4E4A45;   /* 鉛筆の黒鉛 */
+  --pencil-line:rgba(78,74,69,.35);
+  /* 画用紙のざらつき（ごく薄く） */
+  --grain:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .35  0 0 0 0 .28  0 0 0 0 .2  0 0 0 .07 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+body{background:var(--grain), var(--paper);background-attachment:scroll}
+.intro{background:var(--grain), var(--paper)}
+
+/* 影と、ゆがんだ角をやめる */
+button,.btn{box-shadow:none;border-radius:12px}
+button:active,.btn:active{transform:translateY(1px);box-shadow:none}
+.card{background:transparent;border:0;padding:8px 0}
+.link{background:transparent;border:0;border-radius:0;padding:8px 4px;min-height:44px;color:var(--graphite);
+  text-decoration:underline;text-decoration-color:var(--pencil-line);text-decoration-thickness:2px;text-underline-offset:6px}
+
+/* 文字は鉛筆。縁を少しかすれさせる */
+.logo,.word,.status,.big .label,.day,.item .wd,.mailtx b,.paper .to{filter:url(#pencil)}
+.logo{color:var(--graphite)}
+
+/* 子どもの絞り込み: 枠をやめて文字だけ。選んだものに色鉛筆の下線 */
+.chip{background:transparent;border:0;border-radius:0;padding:6px 6px;min-height:44px;color:var(--graphite);font-weight:500}
+.chip.on{background:transparent;color:var(--graphite);font-weight:700;
+  text-decoration:underline wavy var(--leaf);text-decoration-thickness:2px;text-underline-offset:7px}
+.chip.quietchip{border:0;color:var(--muted)}
+
+/* 一覧の行: 囲み・背景をやめて、紙に直接書いたように。行の間は鉛筆の細い線 */
+.item{background:transparent;border:0;border-radius:0;box-shadow:none;margin-top:0;padding:12px 4px;min-height:0;
+  border-bottom:1.5px solid var(--pencil-line)}
+.item:hover{border-color:var(--pencil-line);background:rgba(78,74,69,.04)}
+.item.done{background:transparent}
+.item.done .wd{color:var(--muted)}
+.item .wd{color:color-mix(in srgb, var(--kc, var(--graphite)) 72%, #2B2118)} /* その子の色の色鉛筆 */
+.item.unread{border-color:var(--pencil-line);box-shadow:none}
+.tag.new{background:transparent;border:0;padding:0;color:var(--rose);font-weight:700;
+  text-decoration:underline wavy var(--rose);text-underline-offset:4px}
+.item .rt .ghost{background:transparent;border:0}
+
+/* 物差し: 日付と曜日は、物差しの右横に鉛筆で */
+.ruler .day{margin:30px 0 4px;color:var(--graphite)}
+.ruler .day .cm{position:static;transform:rotate(-3deg);width:auto;background:none;padding:0;
+  font:400 18px/1.2 var(--font-head);color:var(--graphite);letter-spacing:.02em}
+.ruler .day small{font:400 15px var(--font-head);color:var(--graphite)}
+/* 鉛筆の線: 物差しをまたいで、日付の手前まで。少し傾けて、端をかすれさせる */
+.ruler .day::before{left:-60px;width:56px;height:2.5px;background:var(--graphite);opacity:.8;transform:translateY(-1px) rotate(-4deg);filter:url(#pencil)}
+@media (max-width:420px){
+  .ruler .day::before{left:-52px;width:48px}
+  .ruler .day .cm{left:auto;width:auto;font-size:16px}
+}
+
+/* 新着の手紙: 枠をやめて、鳥と手書きの一文だけ */
+.mail{background:transparent;border:0;box-shadow:none;padding:8px 0;border-radius:0}
+.mailtx b{color:var(--sky)}
+
+/* 子ども部屋: 影をやめて、鉛筆の丸 */
+.big{box-shadow:none;border:2.5px solid var(--graphite);filter:none}
+.big:active{box-shadow:none}
+.big.stop{border-color:var(--leaf)}
+
+/* 便箋・詳細シートは、角を素直に */
+.paper{border-radius:6px}
+.photo{border-radius:8px}

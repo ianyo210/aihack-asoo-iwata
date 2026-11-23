@@ -9,6 +9,14 @@
 <link rel="stylesheet" href="/ui.css">
 </head>
 <body>
+<!-- 鉛筆のかすれ: 線や文字の縁を、ほんの少しざらつかせる -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <filter id="pencil" x="-5%" y="-20%" width="110%" height="140%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="3" result="n"/>
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="1.4" xChannelSelector="R" yChannelSelector="G"/>
+  </filter>
+</svg>
+
 <div id="intro" class="intro" aria-hidden="true">
   <div class="intro-fly">
     <img src="/assets/ui/07-flying-bird.png" alt="" width="200" height="202">
@@ -326,6 +334,8 @@ function render() {
     }
     const row = el('div', 'item' + (entry.graduatedDate ? ' done' : '') + (unread.has(ev.id) ? ' unread' : '')); // ボタンの中にボタンを入れないよう div にする
     row.tabIndex = 0; row.setAttribute('role', 'button');
+    const kc = kids.find((c) => c.id === ev.childId)?.color;
+    if (kc) row.style.setProperty('--kc', kc); // その子の色の色鉛筆で書く
     const n = nthSighting(events, ev), grad = Boolean(entry.graduatedDate);
     row.append(Object.assign(el('img', 'st'), { src: stageSrc(grad, n), alt: stageName(grad, n), width: 56, height: 56, loading: 'lazy' }));
     const bd = el('span', 'bd');
