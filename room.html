@@ -40,7 +40,7 @@
 </main>
 
 <script type="module">
-import { recordCandidates, putClip, loadMuseum, loadTel } from '/lib/store.js';
+import { recordCandidates, putClip, loadMuseum, loadTel, addRecording, nowLocal } from '/lib/store.js';
 import { familyDictionary, telHref } from '/lib/mistakes.js';
 // こまったときの「でんわ」ボタン（番号があるときだけ）
 const callHref = telHref(loadTel());
@@ -77,26 +77,39 @@ function show(listening) {
 }
 
 // 文字 → 言い間違いの候補 → お母さんの画面へ（子どもには結果を見せない）
-async function deliver(text, clipId, segments = []) {
+async function deliver(text, clipId, segments = [], recordedAt = null) {
   try {
     const r = await fetch('/api/detect', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ text, segments, museum: museumLite() }) }).then((x) => x.json());
     if (!r.ok) throw new Error(r.error || '失敗');
-    recordCandidates(r.candidates, { clipId }); // お母さんの確認なしで、図書館と記録に入る
-    say($('note'), r.candidates.length ? 'おうちのひとに とどけたよ' : '');
-  } catch { say($('note'), 'うまくいかなかったよ'); }
+    recordCandidates(r.candidates, { ...(recordedAt ? { at: recordedAt } : {}), clipId }); // お母さんの確認なしで、図書館と記録に入る
+    say($('note'), r.candidates.length ? (recordedAt ? `${recordedAt.slice(11, 16)} に録音して おうちのひとに とどけたよ` : 'おうちのひとに とどけたよ') : (recordedAt ? `${recordedAt.slice(11, 16)} に録音しました` : ''));
+    return r.candidates.length;
+  } catch {
+    say($('note'), recordedAt ? `${recordedAt.slice(11, 16)} に録音しました` : 'うまくいかなかったよ');
+    return 0;
+  }
 }
 
 async function onClip(blob, type) {
   if (!blob || !blob.size) return;
+  const at = nowLocal();
+  const hm = at.slice(11, 16);
   const clipId = `c-${Date.now()}`;
   await putClip(clipId, blob);
+  addRecording({ id: clipId, at, clipId, text: '', matched: false });
+  say($('note'), `${hm} に録音しました`);
   try {
     const resp = await fetch('/api/transcribe', { method: 'POST', headers: { 'content-type': 'application/octet-stream', 'x-audio-type': type || 'audio/webm', 'x-hint-words': encodeURIComponent(JSON.stringify(familyWords())) }, body: blob });
-    if (resp.status === 422) return; // 短すぎる・無音などはエラー表示せず静かに続ける
+    if (resp.status === 422) return; // 文字起こし不可（短すぎ・雑音など）でも、録音日時と音声は通知に残す
     const r = await resp.json();
     if (!resp.ok || !r.ok) throw new Error(r.error || `エラー ${resp.status}`);
-    if (r.text) await deliver(r.text, clipId, r.segments);
-  } catch { say($('note'), 'うまくいかなかったよ'); }
+    if (r.text) {
+      const hits = await deliver(r.text, clipId, r.segments, at);
+      addRecording({ id: clipId, at, clipId, text: r.text, matched: hits > 0 });
+    }
+  } catch {
+    say($('note'), `${hm} に録音しました`); // 文字起こしできなくても、録音記録と音声は通知に残す
+  }
 }
 
 function releaseStream() {
@@ -133,8 +146,9 @@ function armRecorder(preferredType) {
 
 function finishUtterance(manual = false) {
   if (!activeRec || activeRec.rec.state === 'inactive') return;
-  const duration = Date.now() - speechStartedAt;
-  activeRec.send = speaking && (manual ? voiceTicks >= 1 : (voiceTicks >= 2 && duration >= MIN_MS));
+  const now = Date.now();
+  const duration = now - speechStartedAt;
+  activeRec.send = manual ? (now - activeRec.startedAt >= 300) : (speaking && voiceTicks >= 2 && duration >= MIN_MS);
   speaking = false;
   voiceTicks = 0;
   $('main').classList.remove('hearing');
@@ -175,12 +189,8 @@ function tick(an, buf, preferredType) {
 
 async function start() {
   stopping = false;
-  try {
-    stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
-  } catch {
-    try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
-    catch { say($('note'), 'まいくを ゆるしてね'); return; }
-  }
+  try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
+  catch { say($('note'), 'まいくを ゆるしてね'); return; }
   const AC = window.AudioContext || window.webkitAudioContext;
   ctx = new AC();
   if (ctx.state === 'suspended') {

@@ -134,7 +134,7 @@
 import { recordSighting, updateEntry, removeEntry, frequencyOf, nthSighting, graduate, assignChild, addChild, updateChild, removeChild, ageText, CHILD_LIMIT, unreadSince, familyDictionary } from '/lib/mistakes.js';
 import { telHref } from '/lib/mistakes.js';
 import { loadTel, saveTel } from '/lib/store.js';
-import { loadMuseum, saveMuseum, loadEvents, saveEvents, loadChildren, saveChildren, loadPending, savePending, loadLastSeen, saveLastSeen, nowLocal, today, playClip, putClip, resizeImage, imageUrl, recordCandidates } from '/lib/store.js';
+import { loadMuseum, saveMuseum, loadEvents, saveEvents, loadChildren, saveChildren, loadPending, savePending, loadLastSeen, saveLastSeen, loadRecordings, nowLocal, today, playClip, putClip, resizeImage, imageUrl, recordCandidates } from '/lib/store.js';
 const $ = (id) => document.getElementById(id);
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
 const urls = [];
@@ -300,20 +300,62 @@ function unreadNow() {
   return unreadSince(loadEvents().filter((e) => byId.has(e.entryId)), loadLastSeen());
 }
 
+function unreadRecordingsNow() {
+  const lastSeen = loadLastSeen();
+  const cutoff = lastSeen ? Date.parse(lastSeen) : NaN;
+  const eventClipIds = new Set(loadEvents().map((e) => e.clipId).filter(Boolean));
+  return loadRecordings()
+    .filter((r) => {
+      if (r.matched || (r.clipId && eventClipIds.has(r.clipId))) return false; // 言い間違い通知と重複させない
+      if (!Number.isFinite(cutoff)) return true;
+      const t = Date.parse(r.at);
+      return Number.isFinite(t) && t > cutoff;
+    })
+    .sort((a, b) => Date.parse(a.at) - Date.parse(b.at));
+}
+
+function unreadTotalCount() {
+  return unreadNow().length + unreadRecordingsNow().length;
+}
+
 function openLetter() {
-  const unread = unreadNow(), kids = loadChildren(), events = loadEvents();
-  if (!unread.length) return;
-  $('letterLead').textContent = `まえに ひらいてから、${unread.length}つの ことばが とどいたよ。`;
+  const unread = unreadNow(), unreadRecs = unreadRecordingsNow(), kids = loadChildren(), events = loadEvents();
+  if (!unread.length && !unreadRecs.length) return;
+  if (unread.length && unreadRecs.length) {
+    $('letterLead').textContent = `まえに ひらいてから、${unread.length}つの ことば と ${unreadRecs.length}けんの ろくおんが とどいたよ。`;
+  } else if (unreadRecs.length) {
+    $('letterLead').textContent = `まえに ひらいてから、${unreadRecs.length}けんの ろくおんが とどいたよ。`;
+  } else {
+    $('letterLead').textContent = `まえに ひらいてから、${unread.length}つの ことばが とどいたよ。`;
+  }
+  const mixed = [
+    ...unread.map((ev) => ({ kind: 'event', at: ev.at, ev })),
+    ...unreadRecs.map((rec) => ({ kind: 'recording', at: rec.at, rec })),
+  ].sort((a, b) => Date.parse(a.at) - Date.parse(b.at));
   const box = $('letterList'); box.replaceChildren();
-  for (const ev of unread) {
-    const k = kids.find((c) => c.id === ev.childId), n = nthSighting(events, ev);
+  for (const item of mixed) {
     const li = el('li');
-    li.append(Object.assign(el('img'), { src: stageSrc(false, n), alt: '', width: 40, height: 40 }));
-    const tx = el('span', 'tx');
-    tx.append(`${k ? k.name : 'だれか'}が「`, el('b', '', ev.wrong), '」って いったよ。');
-    tx.append(el('small', '', `${md(ev.at.slice(0, 10))} ${hm(ev.at)}${ev.quote ? `　「${ev.quote}」` : ''}${n > 1 ? `　${n}かいめ` : '　はじめて'}`));
-    li.append(tx);
-    if (ev.clipId) li.append(playBtn(ev.clipId));
+    if (item.kind === 'event') {
+      const ev = item.ev, k = kids.find((c) => c.id === ev.childId), n = nthSighting(events, ev);
+      li.append(Object.assign(el('img'), { src: stageSrc(false, n), alt: '', width: 40, height: 40 }));
+      const tx = el('span', 'tx');
+      tx.append(`${k ? k.name : 'だれか'}が「`, el('b', '', ev.wrong), '」って いったよ。');
+      tx.append(el('small', '', `${md(ev.at.slice(0, 10))} ${hm(ev.at)}${ev.clipId ? ' に録音しました' : ''}${ev.quote ? `　「${ev.quote}」` : ''}${n > 1 ? `　${n}かいめ` : '　はじめて'}`));
+      li.append(tx);
+      if (ev.clipId) li.append(playBtn(ev.clipId));
+    } else {
+      const rec = item.rec;
+      li.append(Object.assign(el('img'), { src: UI + '09-listening-bird.png', alt: '', width: 40, height: 40 }));
+      const tx = el('span', 'tx');
+      tx.append('子ども部屋で ', el('b', '', '声を録音しました'));
+      tx.append(el('small', '', `${md(rec.at.slice(0, 10))} ${hm(rec.at)} に録音しました${rec.text ? `　「${rec.text}」` : ''}`));
+      if (rec.clipId) {
+        tx.style.cursor = 'pointer';
+        tx.onclick = () => { $('letter').close(); openManual(rec.text, rec.clipId); };
+      }
+      li.append(tx);
+      if (rec.clipId) li.append(playBtn(rec.clipId));
+    }
     box.append(li);
   }
   $('letter').showModal();
@@ -325,8 +367,9 @@ function render() {
   const museum = loadMuseum(), events = loadEvents(), kids = loadChildren();
   renderKids(events);
   const unread = new Set(unreadNow().map((e) => e.id));
-  $('mail').hidden = unread.size === 0;
-  $('mailCount').textContent = `${unread.size}つうの おてがみ。おして ひらいてね`;
+  const totalUnread = unread.size + unreadRecordingsNow().length;
+  $('mail').hidden = totalUnread === 0;
+  $('mailCount').textContent = `${totalUnread}つうの おてがみ。おして ひらいてね`;
   const byId = new Map(museum.map((e) => [e.id, e]));
   const known = (ev) => kids.some((k) => k.id === ev.childId);
   const list = [...events]
@@ -557,7 +600,7 @@ function arrive() {
   const m = $('mail'); if (m.hidden) return;
   m.classList.remove('arrive'); void m.offsetWidth; m.classList.add('arrive');
 }
-window.addEventListener('storage', () => { const n = unreadNow().length; if (n > shownUnread) arrive(); shownUnread = n; });
+window.addEventListener('storage', () => { const n = unreadTotalCount(); if (n > shownUnread) arrive(); shownUnread = n; });
 
 // はじめて開いたとき: 例の子（ゆい・そら。行だけ）と、サンプルの子「たろう」（本物の声4本）を入れておく。
 // 今日の分が手紙で届くように、「きのうの夜に一度ひらいた」ことにする。全部消したあとに勝手に入り直さないよう、入れたことを覚える
@@ -571,7 +614,7 @@ if (!seededBefore && !loadEvents().length) {
 }
 
 render();
-shownUnread = unreadNow().length;
+shownUnread = unreadTotalCount();
 arrive();
 ensureAvatars().then((changed) => { if (changed) render(); });
 </script>
