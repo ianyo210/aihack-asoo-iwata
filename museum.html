@@ -28,6 +28,11 @@
   </div>
   <p id="summary" class="summary"></p>
   <div id="kidsBar" class="chips" role="group" aria-label="子どもで絞り込む"></div>
+  <div class="row" style="margin-top:8px">
+    <button id="addVoice" class="quiet" type="button">録音ファイルから入れる</button>
+    <input id="voiceFile" type="file" accept="audio/*" hidden>
+    <span id="voiceMsg" class="muted" aria-live="polite"></span>
+  </div>
 
   <button id="mail" class="mail" type="button" hidden>
     <span class="carrier" aria-hidden="true">
@@ -53,6 +58,17 @@
     <p class="from">ことば鳥より <img src="/assets/ui/01-bird.png" alt="" width="40" height="39"></p>
   </div>
   <div class="actions"><button id="letterDone" type="button">よんだよ</button></div>
+</dialog>
+
+<dialog id="manual" class="sheet" aria-labelledby="manTitle">
+  <h2 id="manTitle" tabindex="-1" autofocus>言い間違いは、見つかりませんでした</h2>
+  <p class="muted" style="margin:6px 0 0">Aqua の書き起こし:「<span id="manHeard"></span>」<br>声を聞いて、聞こえたとおりに書けば、図書館に入ります。次からは、この言葉をそのまま聞き取れるようになります。</p>
+  <div class="row" style="margin-top:8px"><button id="manPlay" class="ghost" type="button">声を聞く</button></div>
+  <label class="field" for="manWrong">聞こえたとおりの言葉</label>
+  <input id="manWrong" type="text" maxlength="20" placeholder="例: さんとさん" autocomplete="off">
+  <label class="field" for="manRight">正しい言葉（わかれば）</label>
+  <input id="manRight" type="text" maxlength="20" placeholder="例: サンタさん" autocomplete="off">
+  <div class="actions"><button id="manClose" class="ghost" type="button">やめる</button><button id="manSave" type="button">図書館に入れる</button></div>
 </dialog>
 
 <dialog id="kids" class="sheet" aria-labelledby="kidsTitle">
@@ -115,7 +131,7 @@
 </dialog>
 
 <script type="module">
-import { recordSighting, updateEntry, removeEntry, frequencyOf, nthSighting, graduate, assignChild, addChild, updateChild, removeChild, ageText, CHILD_LIMIT, unreadSince } from '/lib/mistakes.js';
+import { recordSighting, updateEntry, removeEntry, frequencyOf, nthSighting, graduate, assignChild, addChild, updateChild, removeChild, ageText, CHILD_LIMIT, unreadSince, familyDictionary } from '/lib/mistakes.js';
 import { loadMuseum, saveMuseum, loadEvents, saveEvents, loadChildren, saveChildren, loadPending, savePending, loadLastSeen, saveLastSeen, nowLocal, today, playClip, putClip, resizeImage, imageUrl, recordCandidates } from '/lib/store.js';
 const $ = (id) => document.getElementById(id);
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
@@ -415,7 +431,12 @@ $('shDelete').onclick = () => {
 $('sheet').addEventListener('close', () => { armed = false; $('shDelete').textContent = '図書館から外す'; });
 
 // デモ用の例（過去の日付で記録を積む）
-$('seed').onclick = () => {
+$('seed').onclick = async () => {
+  // デモ用の声（パソコンの読み上げで作った音声。本物の子どもの声ではない）
+  const demoClip = {};
+  for (const [w, file] of [['てびり', 'tebiri-tts.wav'], ['とうもころし', 'tomorokoshi-tts.wav']]) {
+    try { const b = await fetch(`/assets/demo/${file}`).then((r) => r.blob()); if (await putClip(`demo-${file}`, b)) demoClip[w] = `demo-${file}`; } catch { /* 声なしで続ける */ }
+  }
   let kids = loadChildren();
   if (!kids.length) { // 例として、子どもを2人登録する
     kids = addChild(addChild(kids, { name: 'ゆい', birthday: '2023-07-15' }), { name: 'そら', birthday: '2021-02-01' });
@@ -435,7 +456,7 @@ $('seed').onclick = () => {
     [R, at('2026-11-22', '16:05:00'), 'てびり みたいなー', null], // 例: だれが言ったか未選択
     [R, at(today(), '08:10:00'), 'てびり みて！', yui],
     [T, at(today(), '12:30:00'), 'とうもころし また たべたい', yui], // 4回目で、卵が鳥に育つ
-  ]) s = recordSighting(s, { ...c, childId: who }, { at: a, quote: q });
+  ]) s = recordSighting(s, { ...c, childId: who }, { at: a, quote: q, clipId: demoClip[c.wrong] ?? null });
   s.museum = graduate(s.museum, 'えべれーたー', '2026-11-20', sora);
   saveMuseum(s.museum); saveEvents(s.events);
   // 例: きのうの夜に一度ひらいた、ということにする → 今日の分が、手紙で届く
@@ -444,6 +465,45 @@ $('seed').onclick = () => {
 };
 
 window.addEventListener('storage', render); // 子ども部屋で見つかったら、すぐ反映
+
+// ---- 録音ファイルから入れる（スマホの録音アプリの声など）。見つからなければ、聞こえたとおりに手で登録 ----
+let manClip = null, manHeard = '';
+$('addVoice').onclick = () => $('voiceFile').click();
+$('voiceFile').onchange = async (ev) => {
+  const f = ev.target.files?.[0]; ev.target.value = ''; if (!f) return;
+  const clipId = `c-${Date.now()}`;
+  await putClip(clipId, f); // 声はブラウザの中に残す（あとで聞き返せる）
+  $('voiceMsg').textContent = '聞き取っています…';
+  let heard = '';
+  try {
+    const words = familyDictionary(loadMuseum()).map((d) => d.wrong);
+    const t = await fetch('/api/transcribe', { method: 'POST', headers: { 'content-type': 'application/octet-stream', 'x-audio-type': f.type || 'audio/mp4', 'x-hint-words': encodeURIComponent(JSON.stringify(words)) }, body: f }).then((r) => r.json());
+    if (!t.ok) throw new Error(t.error || '文字にできませんでした');
+    heard = t.text || '';
+    const museumLite = loadMuseum().map(({ id, wrong, right, graduatedDate }) => ({ id, wrong, right, graduatedDate }));
+    const d = await fetch('/api/detect', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ text: heard, segments: t.segments, museum: museumLite }) }).then((r) => r.json());
+    if (d.ok && d.candidates.length) {
+      recordCandidates(d.candidates, { clipId });
+      $('voiceMsg').textContent = `見つけました: ${d.candidates.map((c) => c.wrong).join('、')}`;
+      render(); arrive(); return;
+    }
+    $('voiceMsg').textContent = '';
+  } catch (e) { $('voiceMsg').textContent = `うまく聞き取れませんでした（${e.message}）`; }
+  openManual(heard, clipId);
+};
+function openManual(heard, clipId) {
+  manClip = clipId; manHeard = heard;
+  $('manHeard').textContent = heard || '（聞き取れませんでした）';
+  $('manWrong').value = ''; $('manRight').value = ''; $('manPlay').textContent = '声を聞く';
+  $('manual').showModal();
+}
+$('manPlay').onclick = async () => { if (!(await playClip(manClip))) $('manPlay').textContent = '音声がありません'; };
+$('manClose').onclick = () => $('manual').close();
+$('manSave').onclick = () => {
+  const w = $('manWrong').value.trim(); if (!w) { $('manWrong').focus(); return; }
+  recordCandidates([{ wrong: w, right: $('manRight').value.trim(), quote: manHeard }], { clipId: manClip });
+  $('manual').close(); render(); arrive();
+};
 
 // 起動時: ことば鳥が飛んでくる（新着があれば、手紙をくわえて）。押すと飛ばせる
 // 手紙のバナーに、鳥が飛んでくる（起動時の演出が終わってから。新しく届いたときも）
