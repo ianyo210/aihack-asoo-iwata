@@ -328,6 +328,22 @@ test('detectByGemini: 鍵なし・HTTP エラー・空の返事は例外', async
   await assert.rejects(detectByGemini('x', { apiKey: 'k', fetchImpl: async () => okResponse({ candidates: [] }) }), /空/);
 });
 
+test('detectByGemini: 429/503 時は次のモデルへ自動で切り替えて成功する', async () => {
+  const tried = [];
+  const fetchImpl = async (url) => {
+    tried.push(url);
+    if (tried.length === 1) return { ok: false, status: 429 };
+    if (tried.length === 2) return { ok: false, status: 503 };
+    return okResponse(geminiBody({ candidates: [{ wrong: 'らいよん', right: 'ライオン' }] }));
+  };
+  const r = await detectByGemini('らいよん みた', { apiKey: 'k', fetchImpl });
+  assert.equal(r[0].wrong, 'らいよん');
+  assert.equal(tried.length, 3);
+  assert.match(tried[0], /gemini-2\.5-flash:/);
+  assert.match(tried[1], /gemini-2\.5-flash-lite:/);
+  assert.match(tried[2], /gemini-2\.0-flash:/);
+});
+
 test('detectByOpenRouter: 鍵は Authorization ヘッダー。モデルを指定でき、返事を候補にする', async () => {
   let seen;
   const fetchImpl = async (url, init) => {
