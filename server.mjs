@@ -22,6 +22,8 @@ const MIME = {
   '.svg': 'image/svg+xml',
   '.css': 'text/css; charset=utf-8',
   '.png': 'image/png',
+  '.m4a': 'audio/mp4',
+  '.wav': 'audio/wav',
 };
 
 const sseClients = new Set();

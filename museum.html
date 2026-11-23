@@ -38,6 +38,7 @@
   <div id="kidsBar" class="chips" role="group" aria-label="子どもで絞り込む"></div>
   <div class="row" style="margin-top:8px">
     <button id="addVoice" class="quiet" type="button">録音ファイルから入れる</button>
+    <button id="seedTaro" class="quiet" type="button">たろうのサンプルを入れる</button>
     <input id="voiceFile" type="file" accept="audio/*" hidden>
     <span id="voiceMsg" class="muted" aria-live="polite"></span>
   </div>
@@ -441,6 +442,36 @@ $('shDelete').onclick = () => {
 $('sheet').addEventListener('close', () => { armed = false; $('shDelete').textContent = '図書館から外す'; });
 
 // デモ用の例（過去の日付で記録を積む）
+// サンプルの子「たろう」: 本物の子どもの声（4本）。音声ファイルが無い環境では、声なしで入る
+const TARO_SAMPLES = [
+  ['taro-santasan.m4a', { wrong: 'さんとさん', right: 'サンタさん' }, -1, '19:10:00', 'さんとさん'],
+  ['taro-toumokoroshi.m4a', { wrong: 'とうもころし', right: 'とうもろこし' }, 0, '09:20:00', 'とうもころし たべたい'],
+  ['taro-te-tebiri.m4a', { wrong: 'てびり', right: 'テレビ' }, 0, '11:05:00', 'て てびり'],
+  ['taro-tebiri-mitai.m4a', { wrong: 'てびり', right: 'テレビ' }, 0, '13:40:00', 'てびり みたい'],
+];
+async function seedTaro() {
+  let kids = loadChildren();
+  if (!kids.some((k) => k.name === 'たろう')) { kids = addChild(kids, { name: 'たろう' }); saveChildren(kids); }
+  const taro = kids.find((k) => k.name === 'たろう')?.id ?? null;
+  if (!taro || loadEvents().some((e) => e.childId === taro && e.quote === 'さんとさん')) return false; // 2回入れない
+  let s = { museum: loadMuseum(), events: loadEvents() };
+  for (const [file, c, dayOffset, time, quote] of TARO_SAMPLES) {
+    let clipId = null;
+    try {
+      const r = await fetch(`/assets/samples/${file}`);
+      if (r.ok) { const b = new Blob([await r.arrayBuffer()], { type: 'audio/mp4' }); if (await putClip(file, b)) clipId = file; }
+    } catch { /* 声なしで続ける */ }
+    const d = new Date(Date.now() + dayOffset * 86400000).toLocaleDateString('sv-SE');
+    s = recordSighting(s, { ...c, childId: taro }, { at: `${d}T${time}`, quote, clipId });
+  }
+  saveMuseum(s.museum); saveEvents(s.events);
+  return true;
+}
+$('seedTaro').onclick = async () => {
+  $('voiceMsg').textContent = (await seedTaro()) ? 'たろうの声を入れました' : 'たろうの声は、もう入っています';
+  render(); arrive();
+};
+
 $('seed').onclick = async () => {
   // デモ用の声（パソコンの読み上げで作った音声。本物の子どもの声ではない）
   const demoClip = {};
@@ -469,6 +500,7 @@ $('seed').onclick = async () => {
   ]) s = recordSighting(s, { ...c, childId: who }, { at: a, quote: q, clipId: demoClip[c.wrong] ?? null });
   s.museum = graduate(s.museum, 'えべれーたー', '2026-11-20', sora);
   saveMuseum(s.museum); saveEvents(s.events);
+  await seedTaro();
   // 例: きのうの夜に一度ひらいた、ということにする → 今日の分が、手紙で届く
   saveLastSeen(`${new Date(Date.now() - 86400000).toLocaleDateString('sv-SE')}T20:00:00`);
   render();
