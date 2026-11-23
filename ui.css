@@ -13,7 +13,7 @@
   --rose:#C25F5B; --rose-soft:#F8E2DF;    /* 羽のピンク */
   --on-accent:#FFFDF7;
   --wobble: 18px 24px 16px 22px / 22px 16px 24px 18px; /* 手描き風の角 */
-  --font-head:"Klee One","Zen Maru Gothic","Hiragino Maru Gothic ProN","Yu Gothic",sans-serif;
+  --font-head:"Yusei Magic","Zen Maru Gothic","Hiragino Maru Gothic ProN","Yu Gothic",sans-serif;
   --font-body:"Zen Maru Gothic","Hiragino Maru Gothic ProN","Yu Gothic",sans-serif;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -35,7 +35,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,[role=button]:focus-vis
 
 /* ---- 見出し・ロゴ（名前まで、ちょっと言い間違えている） ---- */
 .top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:4px}
-.logo{margin:0;font:600 26px/1.15 var(--font-head);letter-spacing:.04em;color:var(--ink)}
+.logo{margin:0;font:400 26px/1.15 var(--font-head);letter-spacing:.04em;color:var(--ink)}
 .logo .l2{display:block;font-size:30px;color:var(--leaf)}
 .logo .mirror{display:inline-block;transform:scaleX(-1);color:var(--sky)}   /* 子どもがよく書く鏡文字 */
 .logo .tilt{display:inline-block;transform:rotate(-9deg) translateY(1px);color:var(--rose)}
@@ -44,7 +44,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,[role=button]:focus-vis
 
 /* ---- 部品 ---- */
 .card{background:var(--card);border:2px solid var(--line);border-radius:var(--wobble);padding:16px;margin-top:14px}
-.card h2{font:600 18px/1.4 var(--font-head);margin:0 0 6px}
+.card h2{font:400 18px/1.4 var(--font-head);margin:0 0 6px}
 .muted{color:var(--muted);font-size:14px}
 button,.btn{font:inherit;font-weight:700;border:0;border-radius:var(--wobble);padding:12px 18px;min-height:48px;background:var(--leaf);color:var(--on-accent);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 3px 0 rgba(74,58,42,.18)}
 button:active,.btn:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(74,58,42,.18)}
@@ -55,27 +55,27 @@ button:disabled{opacity:.5;cursor:default}
 .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .row.grow>*{flex:1 1 140px}
 .tag{font-size:12px;border-radius:99px;padding:1px 10px;background:var(--sun-soft);color:var(--ink);white-space:nowrap;border:1px solid var(--line)}
-.word{font:600 30px/1.3 var(--font-head);color:var(--ink);overflow-wrap:anywhere}
+.word{font:400 30px/1.3 var(--font-head);color:var(--ink);overflow-wrap:anywhere}
 .empty{color:var(--muted);text-align:center;padding:8px 0 14px}
 input[type=text],input[type=date]{width:100%;font:inherit;font-size:16px;padding:12px;min-height:48px;border:2px solid var(--line);border-radius:14px;background:var(--paper);color:var(--ink)}
-label.field{display:block;font:600 16px/1.4 var(--font-head);margin:20px 0 8px;color:var(--leaf)}
+label.field{display:block;font:400 16px/1.4 var(--font-head);margin:20px 0 8px;color:var(--leaf)}
 [hidden]{display:none!important}
 
 /* ---- 子ども部屋（room）: スタートとおわりだけ ---- */
 .stage{min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;
   padding:max(16px,env(safe-area-inset-top)) 16px max(16px,env(safe-area-inset-bottom))}
-.status{font:600 26px/1.4 var(--font-head)}
+.status{font:400 26px/1.4 var(--font-head)}
 .big{width:min(78vw,320px);aspect-ratio:1;border-radius:50%;padding:0;flex-direction:column;gap:2px;position:relative;
   background:var(--card);color:var(--ink);border:3px solid var(--line);box-shadow:0 8px 0 rgba(74,58,42,.16);
   transition:transform .12s, box-shadow .12s, background-color .3s}
 .big:active{transform:translateY(5px);box-shadow:0 3px 0 rgba(74,58,42,.16)}
 .big img{width:72%;height:auto;pointer-events:none}
-.big .label{font:600 clamp(26px,8vw,34px)/1 var(--font-head);margin-top:-6px}
+.big .label{font:400 clamp(26px,8vw,34px)/1 var(--font-head);margin-top:-6px}
 .big.stop{background:var(--leaf-soft);border-color:var(--leaf)}
 .big::after{content:"";position:absolute;inset:-16px;border-radius:50%;border:3px dashed transparent;pointer-events:none}
 .big.stop::after{border-color:var(--leaf);opacity:.55}
 .big.hearing::after{border-color:var(--sun);opacity:1}
-.notes{position:absolute;top:6%;right:4%;font:600 34px var(--font-head);color:var(--sky);opacity:0;pointer-events:none}
+.notes{position:absolute;top:6%;right:4%;font:400 34px var(--font-head);color:var(--sky);opacity:0;pointer-events:none}
 .big.hearing .notes{opacity:1}
 @media (prefers-reduced-motion:no-preference){
   .big.stop img{animation:bob 1.6s ease-in-out infinite}
@@ -90,7 +90,7 @@ label.field{display:block;font:600 16px/1.4 var(--font-head);margin:20px 0 8px;c
   @keyframes breathe{50%{transform:scale(1.02)}}
 }
 .hint{font-size:18px;margin:0;color:var(--muted)}
-.note{min-height:1.6em;font:600 18px var(--font-head);color:var(--leaf);margin:0}
+.note{min-height:1.6em;font:400 18px var(--font-head);color:var(--leaf);margin:0}
 .stage .link{margin-top:12px}
 
 /* ---- 図書館（お母さん・お父さん）: 時系列 ---- */
@@ -102,7 +102,7 @@ label.field{display:block;font:600 16px/1.4 var(--font-head);margin:20px 0 8px;c
 .kid{display:inline-flex;align-items:center;gap:6px}
 .kid i,.kidrow>i{width:12px;height:12px;border-radius:50%;display:inline-block;flex:none;border:1.5px solid rgba(74,58,42,.35)}
 
-.day{font:600 17px/1.4 var(--font-head);color:var(--ink);margin:26px 0 4px;display:flex;gap:8px;align-items:center}
+.day{font:400 17px/1.4 var(--font-head);color:var(--ink);margin:26px 0 4px;display:flex;gap:8px;align-items:center}
 .day small{font:400 13px var(--font-body);color:var(--muted)}
 .day img{width:24px;height:24px}
 .item{display:grid;grid-template-columns:56px 1fr auto;gap:0 12px;align-items:center;width:100%;text-align:left;background:var(--card);color:var(--ink);
@@ -110,7 +110,7 @@ label.field{display:block;font:600 16px/1.4 var(--font-head);margin:20px 0 8px;c
 .item:hover{border-color:var(--sky)}
 .item .st{width:56px;height:56px;object-fit:contain}
 .item .bd{min-width:0}
-.item .wd{display:block;font:600 22px/1.35 var(--font-head);overflow-wrap:anywhere}
+.item .wd{display:block;font:400 22px/1.35 var(--font-head);overflow-wrap:anywhere}
 .item .qt{display:block;font-size:13px;color:var(--muted);overflow-wrap:anywhere}
 .item .mt{display:block;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
 .item .rt{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
@@ -144,4 +144,38 @@ dl.freq dd{margin:0;font-weight:700}
 .kidrow .f{grid-column:1/3;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .kidrow input[type=date]{width:auto;flex:1 1 150px}
 .stack{display:flex;flex-direction:column;gap:8px}
-.sheet h2{font:600 20px/1.4 var(--font-head);margin:0}
+.sheet h2{font:400 20px/1.4 var(--font-head);margin:0}
+
+/* 子ども部屋は、ぜんぶ手書きの文字で */
+.stage,.stage .hint,.stage .link{font-family:var(--font-head)}
+
+/* ---- 新着: ことば鳥が手紙を運んでくる ---- */
+.mail{display:flex;align-items:center;gap:12px;width:100%;margin-top:16px;padding:12px 14px;text-align:left;
+  background:var(--sky-soft);color:var(--ink);border:2px solid var(--sky);border-radius:var(--wobble);box-shadow:0 4px 0 rgba(78,143,203,.25);overflow:hidden}
+.carrier{position:relative;flex:none;width:86px;height:70px}
+.carrier img{position:absolute;left:0;top:0;width:72px;height:auto}
+.carrier .env{position:absolute;right:-2px;top:30px;width:36px;height:auto;transform:rotate(-12deg)}
+.mailtx{display:flex;flex-direction:column;min-width:0}
+.mailtx b{font:400 18px/1.4 var(--font-head)}
+.mailtx small{font-size:13px;color:var(--muted)}
+@media (prefers-reduced-motion:no-preference){
+  .mail:not([hidden]) .carrier{animation:flyin 1.1s cubic-bezier(.2,.8,.3,1) both, flap 1.4s ease-in-out 1.1s infinite}
+  .mail:not([hidden]) .env{animation:sway 1.4s ease-in-out 1.1s infinite}
+  @keyframes flyin{from{transform:translate(110vw,-30px) rotate(-8deg)}70%{transform:translate(-6px,4px) rotate(3deg)}to{transform:none}}
+  @keyframes flap{50%{transform:translateY(-4px)}}
+  @keyframes sway{50%{transform:rotate(-4deg) translateY(2px)}}
+}
+.item.unread{border-color:var(--sun);box-shadow:0 0 0 3px var(--sun-soft)}
+.tag.new{background:var(--sun);color:var(--ink);border-color:var(--sun)}
+
+/* 手紙（便箋） */
+.paper{background:repeating-linear-gradient(to bottom, transparent 0 33px, #EADDC4 33px 34px), #FFFBF0;
+  border:2px solid var(--line);border-radius:var(--wobble);padding:18px 18px 10px;line-height:34px}
+.paper .to{margin:0;font:400 22px/34px var(--font-head)}
+.paper .lead{margin:0 0 4px;font-family:var(--font-head)}
+.letters{list-style:none;margin:0;padding:0}
+.letters li{display:grid;grid-template-columns:40px 1fr auto;gap:10px;align-items:center;padding:6px 0}
+.letters .tx{font-family:var(--font-head);line-height:1.6;min-width:0}
+.letters .tx b{font-weight:400;color:var(--rose);font-size:20px}
+.letters .tx small{display:block;font:13px/1.5 var(--font-body);color:var(--muted)}
+.paper .from{margin:8px 0 0;text-align:right;font:400 18px/34px var(--font-head);display:flex;justify-content:flex-end;align-items:center;gap:6px}

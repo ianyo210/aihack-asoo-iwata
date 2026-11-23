@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#FBF6EA">
 <title>言い間違い図書館</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Klee+One:wght@600&family=Zen+Maru+Gothic:wght@500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Yusei+Magic&family=Zen+Maru+Gothic:wght@500;700&display=swap">
 <link rel="stylesheet" href="/ui.css">
 </head>
 <body>
@@ -20,6 +20,14 @@
   <p id="summary" class="summary"></p>
   <div id="kidsBar" class="chips" role="group" aria-label="子どもで絞り込む"></div>
 
+  <button id="mail" class="mail" type="button" hidden>
+    <span class="carrier" aria-hidden="true">
+      <img src="/assets/ui/01-bird.png" alt="" width="72" height="69">
+      <svg class="env" viewBox="0 0 64 46"><rect x="2" y="3" width="60" height="40" rx="6" fill="#FFF8E7" stroke="#8B6E4E" stroke-width="2.6"/><path d="M4 7 L32 27 L60 7" fill="none" stroke="#8B6E4E" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M32 33 C27 28 25 25 28 23 C30 22 32 24 32 25 C32 24 34 22 36 23 C39 25 37 28 32 33 Z" fill="#E28C8C" stroke="#8B6E4E" stroke-width="1.4"/></svg>
+    </span>
+    <span class="mailtx"><b>ことば鳥が おてがみを はこんできたよ</b><small id="mailCount"></small></span>
+  </button>
+
   <div id="timeline" aria-live="polite"></div>
 
   <div id="emptyBox" class="card" hidden>
@@ -27,6 +35,16 @@
     <div class="row" style="justify-content:center"><button id="seed" class="ghost" type="button">例を入れる（デモ用）</button></div>
   </div>
 </main>
+
+<dialog id="letter" class="sheet" aria-labelledby="letterTo">
+  <div class="paper">
+    <p id="letterTo" class="to" tabindex="-1" autofocus>おうちのひとへ</p>
+    <p id="letterLead" class="lead"></p>
+    <ul id="letterList" class="letters"></ul>
+    <p class="from">ことば鳥より <img src="/assets/ui/01-bird.png" alt="" width="40" height="39"></p>
+  </div>
+  <div class="actions"><button id="letterDone" type="button">よんだよ</button></div>
+</dialog>
 
 <dialog id="kids" class="sheet" aria-labelledby="kidsTitle">
   <h2 id="kidsTitle" style="font:700 18px var(--font-head);margin:0" tabindex="-1" autofocus>子どもの情報</h2>
@@ -88,8 +106,8 @@
 </dialog>
 
 <script type="module">
-import { recordSighting, updateEntry, removeEntry, frequencyOf, nthSighting, graduate, assignChild, addChild, updateChild, removeChild, ageText, CHILD_LIMIT } from '/lib/mistakes.js';
-import { loadMuseum, saveMuseum, loadEvents, saveEvents, loadChildren, saveChildren, loadPending, savePending, nowLocal, today, playClip, putClip, resizeImage, imageUrl, recordCandidates } from '/lib/store.js';
+import { recordSighting, updateEntry, removeEntry, frequencyOf, nthSighting, graduate, assignChild, addChild, updateChild, removeChild, ageText, CHILD_LIMIT, unreadSince } from '/lib/mistakes.js';
+import { loadMuseum, saveMuseum, loadEvents, saveEvents, loadChildren, saveChildren, loadPending, savePending, loadLastSeen, saveLastSeen, nowLocal, today, playClip, putClip, resizeImage, imageUrl, recordCandidates } from '/lib/store.js';
 const $ = (id) => document.getElementById(id);
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
 const urls = [];
@@ -192,9 +210,39 @@ function pick(childId) {
 $('whoClose').onclick = () => $('who').close();
 
 // ---- メイン: 新着が届く。時系列（新しい順）に並べるだけ ----
+// ---- 新着の手紙: 前回「よんだよ」を押したあとに届いたものを、ことば鳥がまとめて運んでくる ----
+function unreadNow() {
+  const byId = new Set(loadMuseum().map((e) => e.id));
+  return unreadSince(loadEvents().filter((e) => byId.has(e.entryId)), loadLastSeen());
+}
+
+function openLetter() {
+  const unread = unreadNow(), kids = loadChildren(), events = loadEvents();
+  if (!unread.length) return;
+  $('letterLead').textContent = `まえに ひらいてから、${unread.length}つの ことばが とどいたよ。`;
+  const box = $('letterList'); box.replaceChildren();
+  for (const ev of unread) {
+    const k = kids.find((c) => c.id === ev.childId), n = nthSighting(events, ev);
+    const li = el('li');
+    li.append(Object.assign(el('img'), { src: stageSrc(false, n), alt: '', width: 40, height: 40 }));
+    const tx = el('span', 'tx');
+    tx.append(`${k ? k.name : 'だれか'}が「`, el('b', '', ev.wrong), '」って いったよ。');
+    tx.append(el('small', '', `${md(ev.at.slice(0, 10))} ${hm(ev.at)}${ev.quote ? `　「${ev.quote}」` : ''}${n > 1 ? `　${n}かいめ` : '　はじめて'}`));
+    li.append(tx);
+    if (ev.clipId) li.append(playBtn(ev.clipId));
+    box.append(li);
+  }
+  $('letter').showModal();
+}
+$('mail').onclick = openLetter;
+$('letterDone').onclick = () => { saveLastSeen(nowLocal()); $('letter').close(); render(); };
+
 function render() {
   const museum = loadMuseum(), events = loadEvents(), kids = loadChildren();
   renderKids(events);
+  const unread = new Set(unreadNow().map((e) => e.id));
+  $('mail').hidden = unread.size === 0;
+  $('mailCount').textContent = `${unread.size}つうの おてがみ。おして ひらいてね`;
   const byId = new Map(museum.map((e) => [e.id, e]));
   const known = (ev) => kids.some((k) => k.id === ev.childId);
   const list = [...events]
@@ -214,14 +262,16 @@ function render() {
       if (rel) h.append(el('small', '', `${md(d)}（${wk(d)}）`));
       box.append(h);
     }
-    const row = el('div', 'item' + (entry.graduatedDate ? ' done' : '')); // ボタンの中にボタンを入れないよう div にする
+    const row = el('div', 'item' + (entry.graduatedDate ? ' done' : '') + (unread.has(ev.id) ? ' unread' : '')); // ボタンの中にボタンを入れないよう div にする
     row.tabIndex = 0; row.setAttribute('role', 'button');
     const n = nthSighting(events, ev), grad = Boolean(entry.graduatedDate);
     row.append(Object.assign(el('img', 'st'), { src: stageSrc(grad, n), alt: stageName(grad, n), width: 56, height: 56, loading: 'lazy' }));
     const bd = el('span', 'bd');
     bd.append(el('span', 'wd', ev.wrong));
     if (ev.quote) bd.append(el('span', 'qt', `「${ev.quote}」`));
-    bd.append(el('span', 'mt', `${hm(ev.at)} ・ ${grad ? '卒業した言葉' : `${n}回目`}`));
+    const mt = el('span', 'mt', `${hm(ev.at)} ・ ${grad ? '卒業した言葉' : `${n}回目`}`);
+    if (unread.has(ev.id)) mt.prepend(el('span', 'tag new', 'あたらしい'), ' ');
+    bd.append(mt);
     row.append(bd);
     const rt = el('span', 'rt');
     if (kids.length) {
@@ -341,7 +391,10 @@ $('seed').onclick = () => {
     [T, at(today(), '12:30:00'), 'とうもころし また たべたい', yui], // 4回目で、卵が鳥に育つ
   ]) s = recordSighting(s, { ...c, childId: who }, { at: a, quote: q });
   s.museum = graduate(s.museum, 'えべれーたー', '2026-11-20', sora);
-  saveMuseum(s.museum); saveEvents(s.events); render();
+  saveMuseum(s.museum); saveEvents(s.events);
+  // 例: きのうの夜に一度ひらいた、ということにする → 今日の分が、手紙で届く
+  saveLastSeen(`${new Date(Date.now() - 86400000).toLocaleDateString('sv-SE')}T20:00:00`);
+  render();
 };
 
 window.addEventListener('storage', render); // 子ども部屋で見つかったら、すぐ反映

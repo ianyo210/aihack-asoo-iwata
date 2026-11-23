@@ -5,7 +5,7 @@ import {
   toHiragana, normalizeTranscript, detectByRules, sanitizeCandidates, detectMistakes,
   registerEntry, graduate, findGraduationHints, updateEntry, removeEntry,
   recordSighting, frequencyOf, nthSighting,
-  attributeSpeakers, addChild, updateChild, removeChild, ageText, defaultChildId, assignChild, CHILD_LIMIT,
+  attributeSpeakers, addChild, updateChild, removeChild, ageText, defaultChildId, assignChild, CHILD_LIMIT, unreadSince,
 } from '../lib/mistakes.js';
 import { detectByGemini } from '../lib/gemini.js';
 import { detectByOpenRouter } from '../lib/openrouter.js';
@@ -249,6 +249,18 @@ test('assignChild: 同じ録音の同じ声はまとめて動く。別の声・�
   assert.equal(back.museum.find((m) => !m.childId && m.wrong === 'てビリ').count, 2);
   assert.ok(!back.museum.some((m) => m.childId === 'ch-1' && m.wrong === 'てビリ')); // 空のカードは消える
   assert.equal(assignChild(s, 'ない', 'ch-1').events, s.events); // 無い記録は何もしない
+});
+
+test('unreadSince: 前回ひらいたあとに届いたものだけ、古い順', () => {
+  const ev = [
+    { id: 'c', at: '2026-11-23T12:30:00' },
+    { id: 'a', at: '2026-11-22T16:05:00' },
+    { id: 'b', at: '2026-11-23T08:10:00' },
+  ];
+  assert.deepEqual(unreadSince(ev, '2026-11-22T20:00:00').map((e) => e.id), ['b', 'c']);
+  assert.deepEqual(unreadSince(ev, '2026-11-23T12:30:00').map((e) => e.id), []); // ちょうどの時刻は既読
+  assert.deepEqual(unreadSince(ev, null).map((e) => e.id), ['a', 'b', 'c']);     // はじめては全部
+  assert.deepEqual(unreadSince([], '2026-11-22T20:00:00'), []);
 });
 
 // ---- Gemini（本物は呼ばない。fetch を差し替える）----

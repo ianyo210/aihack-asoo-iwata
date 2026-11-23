@@ -4,16 +4,16 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#FBF6EA">
-<title>子ども部屋 | 言い間違い図書館</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Klee+One:wght@600&family=Zen+Maru+Gothic:wght@500;700&display=swap">
+<title>こどもべや | いいまちがい としょかん</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Yusei+Magic&family=Zen+Maru+Gothic:wght@500;700&display=swap">
 <link rel="stylesheet" href="/ui.css">
 </head>
 <body>
 <main class="stage">
-  <div id="status" class="status" aria-live="polite">ことりは おやすみ中</div>
+  <div id="status" class="status" aria-live="polite">ことりは おやすみちゅう</div>
   <button id="main" class="big" type="button">
     <img id="bird" src="/assets/ui/09-listening-bird.png" alt="" width="240" height="241">
-    <span id="label" class="label">スタート</span>
+    <span id="label" class="label">すたーと</span>
     <span class="notes" aria-hidden="true">♪</span>
   </button>
   <p id="hint" class="hint">おすと、ことりが おきるよ</p>
@@ -21,7 +21,7 @@
 
   <form id="demoForm" hidden class="row" style="width:100%;max-width:420px">
     <input id="demo" type="text" value="てびり みたいなー" aria-label="デモ用: 子どもが言った言葉" style="flex:1;min-width:0">
-    <button class="ghost" type="submit">送る</button>
+    <button class="ghost" type="submit">おくる</button>
   </form>
 
   <a class="link" href="/museum.html">おうちのひと</a>
@@ -48,11 +48,11 @@ function pickType() {
 // 眠る鳥（待機）→ 起きて聞く鳥（スタート中）。声が聞こえると歌う（.hearing）
 new Image().src = '/assets/ui/01-bird.png'; // 先に読み込んで、切り替えをすぐにする
 function show(listening) {
-  say($('label'), listening ? 'おわり' : 'スタート');
+  say($('label'), listening ? 'おわり' : 'すたーと');
   $('bird').src = listening ? '/assets/ui/01-bird.png' : '/assets/ui/09-listening-bird.png';
   $('main').classList.toggle('stop', listening);
   $('main').classList.remove('hearing');
-  say($('status'), listening ? 'ことりが きいてるよ' : 'ことりは おやすみ中');
+  say($('status'), listening ? 'ことりが きいてるよ' : 'ことりは おやすみちゅう');
   say($('hint'), listening ? 'おわるときは おしてね' : 'おすと、ことりが おきるよ');
 }
 
@@ -62,7 +62,7 @@ async function deliver(text, clipId, segments = []) {
     const r = await fetch('/api/detect', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ text, segments }) }).then((x) => x.json());
     if (!r.ok) throw new Error(r.error || '失敗');
     recordCandidates(r.candidates, { clipId }); // お母さんの確認なしで、図書館と記録に入る
-    say($('note'), r.candidates.length ? 'おかあさんに とどけたよ' : '');
+    say($('note'), r.candidates.length ? 'おうちのひとに とどけたよ' : '');
   } catch { say($('note'), 'うまくいかなかったよ'); }
 }
 
@@ -98,7 +98,7 @@ function tick(an, buf, type) {
 
 async function start() {
   try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
-  catch { say($('note'), 'マイクを ゆるしてね'); return; }
+  catch { say($('note'), 'まいくを ゆるしてね'); return; }
   ctx = new AudioContext();
   const an = ctx.createAnalyser(); an.fftSize = 512;
   ctx.createMediaStreamSource(stream).connect(an);
