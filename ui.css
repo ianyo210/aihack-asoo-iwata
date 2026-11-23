@@ -309,3 +309,7 @@ button:active,.btn:active{transform:translateY(1px);box-shadow:none}
 .call svg{width:26px;height:26px;flex:none}
 .call:active{transform:translateY(1px)}
 .call:focus-visible{outline:3px solid var(--sun);outline-offset:3px}
+
+/* 日付の見出し: 曜日の横に、左向きの色鉛筆 */
+.day .pencil{display:inline-flex;margin-left:4px;transform:rotate(-8deg) translateY(1px)}
+.day .pencil svg{display:block;filter:url(#pencil)}

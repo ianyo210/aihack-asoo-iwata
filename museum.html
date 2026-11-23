@@ -277,6 +277,22 @@ function pick(childId) {
 }
 $('whoClose').onclick = () => $('who').close();
 
+// 左向きの色鉛筆（芯の先が左）。日ごとに色を変える。色は下の固定の一覧からだけ選ぶ
+const PENCIL_COLORS = ['#D9726E', '#5E9BD1', '#7DAA4F', '#E2A936', '#9C7CC2'];
+function pencilMark(i) {
+  const c = PENCIL_COLORS[i % PENCIL_COLORS.length];
+  const s = el('span', 'pencil'); s.setAttribute('aria-hidden', 'true');
+  s.innerHTML = `<svg viewBox="0 0 64 16" width="58" height="15">
+    <path d="M1.5 8 L13 2.5 L13 13.5 Z" fill="#EFCF9C" stroke="#5B4632" stroke-width="1.2" stroke-linejoin="round"/>
+    <path d="M1.5 8 L6 5.8 L6 10.2 Z" fill="${c}" stroke="#5B4632" stroke-width="1" stroke-linejoin="round"/>
+    <rect x="13" y="2.5" width="42" height="11" rx="1.5" fill="${c}" stroke="#5B4632" stroke-width="1.2"/>
+    <path d="M15.5 5.8 H52.5" stroke="#FFFFFF" stroke-opacity=".38" stroke-width="1.6" stroke-linecap="round"/>
+    <rect x="55" y="2.5" width="7" height="11" rx="2" fill="${c}" stroke="#5B4632" stroke-width="1.2"/>
+    <rect x="55.6" y="3.1" width="5.8" height="9.8" rx="1.6" fill="#000000" fill-opacity=".18"/>
+  </svg>`;
+  return s;
+}
+
 // ---- メイン: 新着が届く。時系列（新しい順）に並べるだけ ----
 // ---- 新着の手紙: 前回「よんだよ」を押したあとに届いたものを、ことば鳥がまとめて運んでくる ----
 function unreadNow() {
@@ -319,7 +335,7 @@ function render() {
   $('emptyBox').hidden = events.length > 0;
   $('summary').textContent = list.length ? `${new Set(list.map((e) => e.entryId)).size}種類・あわせて${list.length}回` : events.length ? '該当する記録はありません' : '';
   const box = $('timeline'); box.replaceChildren();
-  let day = null;
+  let day = null, dayIdx = 0;
   for (const ev of list) {
     const d = ev.at.slice(0, 10), entry = byId.get(ev.entryId);
     if (d !== day) {
@@ -329,6 +345,7 @@ function render() {
       if (d === today()) h.append(Object.assign(el('img'), { src: UI + '08d-bell.png', alt: '' })); // 今日届いたもの
       h.append(rel ?? `${wk(d)}ようび`);
       if (rel) h.append(el('small', '', `（${wk(d)}）`));
+      h.append(pencilMark(dayIdx++)); // 曜日を書いたばかりの、左向きの色鉛筆
       box.append(h);
     }
     const row = el('div', 'item' + (entry.graduatedDate ? ' done' : '') + (unread.has(ev.id) ? ' unread' : '')); // ボタンの中にボタンを入れないよう div にする
