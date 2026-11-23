@@ -105,6 +105,32 @@ label.field{display:block;font:400 16px/1.4 var(--font-head);margin:20px 0 8px;c
 .day{font:400 17px/1.4 var(--font-head);color:var(--ink);margin:26px 0 4px;display:flex;gap:8px;align-items:center}
 .day small{font:400 13px var(--font-body);color:var(--muted)}
 .day img{width:24px;height:24px}
+
+/* ---- 柱の背比べ: 左に木の物差し。日付は、物差しに鉛筆でつけた印 ---- */
+.ruler{position:relative;padding-left:58px;margin-top:6px;padding-bottom:18px}
+.ruler:empty{display:none}
+.ruler::before{content:"";position:absolute;left:0;top:0;bottom:0;width:40px;border-radius:8px 8px 6px 6px;
+  border:2px solid #9C7246;box-shadow:inset -3px 0 0 rgba(255,255,255,.25), 2px 3px 0 rgba(74,58,42,.15);
+  background:
+    repeating-linear-gradient(to bottom, #5C3F22 0 2px, transparent 2px 40px) right top / 20px 100% no-repeat,   /* 1cm の目盛り */
+    repeating-linear-gradient(to bottom, #6E4E2E 0 1px, transparent 1px 8px) right top / 9px 100% no-repeat,     /* 2mm の目盛り */
+    repeating-linear-gradient(90deg, rgba(110,70,30,.10) 0 2px, transparent 2px 6px, rgba(110,70,30,.06) 6px 7px, transparent 7px 11px), /* 木目 */
+    linear-gradient(90deg, #D9AE72, #E8C48E 45%, #D2A066);}
+.ruler .day{position:relative;margin:28px 0 2px;min-height:30px}
+.ruler .day:first-child{margin-top:16px}
+/* 日付: 物差しの上に、鉛筆で書いた文字 */
+.ruler .day .cm{position:absolute;left:-58px;width:40px;top:50%;transform:translateY(-50%) rotate(-4deg);text-align:center;
+  font:400 13px/1.2 var(--font-head);color:#3B2A18;background:rgba(255,248,231,.85);border-radius:4px;padding:1px 0;z-index:1}
+/* 鉛筆の線: 物差しをまたいで、少し斜めに */
+.ruler .day::before{content:"";position:absolute;left:-62px;width:56px;top:50%;height:3px;border-radius:2px;background:#4A3A2A;opacity:.75;transform:translateY(6px) rotate(-3deg)}
+@media (max-width:420px){
+  .ruler{padding-left:50px}
+  .ruler::before{width:34px}
+  .ruler .day .cm{left:-50px;width:34px;font-size:12px}
+  .ruler .day::before{left:-54px;width:48px}
+  .ruler .item{grid-template-columns:44px 1fr auto;gap:0 8px;padding:8px 10px}
+  .ruler .item .st{width:44px;height:44px}
+}
 .item{display:grid;grid-template-columns:56px 1fr auto;gap:0 12px;align-items:center;width:100%;text-align:left;background:var(--card);color:var(--ink);
   border:2px solid var(--line);border-radius:var(--wobble);padding:10px 12px;margin-top:10px;cursor:pointer;min-height:76px}
 .item:hover{border-color:var(--sky)}

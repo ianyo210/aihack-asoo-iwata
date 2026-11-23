@@ -36,7 +36,7 @@
     <span class="mailtx"><b>ことば鳥が おてがみを はこんできたよ</b><small id="mailCount"></small></span>
   </button>
 
-  <div id="timeline" aria-live="polite"></div>
+  <div id="timeline" class="ruler" aria-live="polite"></div>
 
   <div id="emptyBox" class="card" hidden>
     <div class="empty">まだ記録はありません。子ども部屋で言い間違いが見つかると、ここに届きます。</div>
@@ -301,9 +301,10 @@ function render() {
     if (d !== day) {
       day = d;
       const rel = dayLabel(d), h = el('div', 'day');
+      h.append(el('span', 'cm', md(d))); // 柱の物差しに、鉛筆でつけた日付の印（背比べの線）
       if (d === today()) h.append(Object.assign(el('img'), { src: UI + '08d-bell.png', alt: '' })); // 今日届いたもの
-      h.append(rel ?? `${md(d)}（${wk(d)}）`);
-      if (rel) h.append(el('small', '', `${md(d)}（${wk(d)}）`));
+      h.append(rel ?? `${wk(d)}ようび`);
+      if (rel) h.append(el('small', '', `（${wk(d)}）`));
       box.append(h);
     }
     const row = el('div', 'item' + (entry.graduatedDate ? ' done' : '') + (unread.has(ev.id) ? ' unread' : '')); // ボタンの中にボタンを入れないよう div にする
