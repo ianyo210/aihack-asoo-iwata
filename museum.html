@@ -17,14 +17,6 @@
   </filter>
 </svg>
 
-<div id="intro" class="intro" aria-hidden="true">
-  <div class="intro-fly">
-    <img src="/assets/ui/07-flying-bird.png" alt="" width="200" height="202">
-    <svg class="env" viewBox="0 0 64 46"><rect x="2" y="3" width="60" height="40" rx="6" fill="#FFF8E7" stroke="#8B6E4E" stroke-width="2.6"/><path d="M4 7 L32 27 L60 7" fill="none" stroke="#8B6E4E" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M32 33 C27 28 25 25 28 23 C30 22 32 24 32 25 C32 24 34 22 36 23 C39 25 37 28 32 33 Z" fill="#E28C8C" stroke="#8B6E4E" stroke-width="1.4"/></svg>
-  </div>
-  <p class="intro-tx">いいま<span class="mirror">ち</span>がい<br>と<span class="tilt">し</span>ょかん</p>
-  <p class="intro-mail">おてがみが とどいたよ</p>
-</div>
 
 <main class="wrap">
   <div class="top">
@@ -38,7 +30,7 @@
   <div id="kidsBar" class="chips" role="group" aria-label="子どもで絞り込む"></div>
   <div class="row" style="margin-top:8px">
     <button id="addVoice" class="quiet" type="button">録音ファイルから入れる</button>
-    <button id="seedTaro" class="quiet" type="button">たろうのサンプルを入れる</button>
+    <button id="seedTaro" class="quiet" type="button">(TEST) たろうのサンプルを入れる</button>
     <input id="voiceFile" type="file" accept="audio/*" hidden>
     <span id="voiceMsg" class="muted" aria-live="polite"></span>
   </div>
@@ -48,14 +40,14 @@
       <img src="/assets/ui/01-bird.png" alt="" width="72" height="69">
       <svg class="env" viewBox="0 0 64 46"><rect x="2" y="3" width="60" height="40" rx="6" fill="#FFF8E7" stroke="#8B6E4E" stroke-width="2.6"/><path d="M4 7 L32 27 L60 7" fill="none" stroke="#8B6E4E" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M32 33 C27 28 25 25 28 23 C30 22 32 24 32 25 C32 24 34 22 36 23 C39 25 37 28 32 33 Z" fill="#E28C8C" stroke="#8B6E4E" stroke-width="1.4"/></svg>
     </span>
-    <span class="mailtx"><b>ことば鳥が おてがみを はこんできたよ</b><small id="mailCount"></small></span>
+    <span class="mailtx"><b>ことばとりが おてがみを はこんできたよ</b><small id="mailCount"></small></span>
   </button>
 
   <div id="timeline" class="ruler" aria-live="polite"></div>
 
   <div id="emptyBox" class="card" hidden>
     <div class="empty">まだ記録はありません。子ども部屋で言い間違いが見つかると、ここに届きます。</div>
-    <div class="row" style="justify-content:center"><button id="seed" class="ghost" type="button">例を入れる（デモ用）</button></div>
+    <div class="row" style="justify-content:center"><button id="seed" class="ghost" type="button">(TEST) 例を入れる</button></div>
   </div>
 </main>
 
@@ -64,7 +56,7 @@
     <p id="letterTo" class="to" tabindex="-1" autofocus>おうちのひとへ</p>
     <p id="letterLead" class="lead"></p>
     <ul id="letterList" class="letters"></ul>
-    <p class="from">ことば鳥より <img src="/assets/ui/01-bird.png" alt="" width="40" height="39"></p>
+    <p class="from">ことばとりより <img src="/assets/ui/01-bird.png" alt="" width="40" height="39"></p>
   </div>
   <div class="actions"><button id="letterDone" type="button">よんだよ</button></div>
 </dialog>
@@ -169,7 +161,7 @@ function stageSrc(graduated, n) {
   if (n >= 2) return UI + '06-hatching-bird.png';
   return UI + '05-egg.png';
 }
-const stageName = (graduated, n) => (graduated ? '卒業' : n >= 4 ? 'ことば鳥' : n >= 2 ? 'ふ化' : 'たまご');
+const stageName = (graduated, n) => (graduated ? '卒業' : n >= 4 ? 'ことばとり' : n >= 2 ? 'ふ化' : 'たまご');
 
 // 前の版が「確認待ち」に残したものは、確認なしで入れて空にする
 (function migrate() {
@@ -547,28 +539,17 @@ $('manSave').onclick = () => {
   $('manual').close(); render(); arrive();
 };
 
-// 起動時: ことば鳥が飛んでくる（新着があれば、手紙をくわえて）。押すと飛ばせる
-// 手紙のバナーに、鳥が飛んでくる（起動時の演出が終わってから。新しく届いたときも）
-let introDone = false, shownUnread = -1;
+// 手紙のバナーに、とりが飛んでくる（ひらいたときと、新しく届いたとき）
+let shownUnread = -1;
 function arrive() {
   const m = $('mail'); if (m.hidden) return;
   m.classList.remove('arrive'); void m.offsetWidth; m.classList.add('arrive');
 }
-window.addEventListener('storage', () => { const n = unreadNow().length; if (introDone && n > shownUnread) arrive(); shownUnread = n; });
-
-(function intro() {
-  const box = $('intro');
-  const finish = () => { introDone = true; shownUnread = unreadNow().length; arrive(); };
-  if (!box) { finish(); return; }
-  if (matchMedia('(prefers-reduced-motion: reduce)').matches) { box.remove(); finish(); return; }
-  if (unreadNow().length) box.classList.add('with-mail');
-  let gone = false;
-  const done = () => { if (gone) return; gone = true; box.classList.add('out'); setTimeout(() => { box.remove(); finish(); }, 450); };
-  box.addEventListener('click', done);
-  setTimeout(done, box.classList.contains('with-mail') ? 2900 : 2300); // 手紙のときは「とどいたよ」を読める長さに
-})();
+window.addEventListener('storage', () => { const n = unreadNow().length; if (n > shownUnread) arrive(); shownUnread = n; });
 
 render();
+shownUnread = unreadNow().length;
+arrive();
 ensureAvatars().then((changed) => { if (changed) render(); });
 </script>
 </body>
