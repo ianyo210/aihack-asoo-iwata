@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#1F7A6D">
+<title>ことばの博物館</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&family=Zen+Maru+Gothic:wght@700&display=swap">
+<link rel="stylesheet" href="/ui.css">
+</head>
+<body>
+<main class="wrap">
+  <div class="top">
+    <h1>ことばの博物館</h1>
+    <nav><a href="/room.html">子ども部屋へ</a></nav>
+  </div>
+
+  <section id="inbox" class="card new" hidden aria-live="polite">
+    <h2>新しい言い間違い <span id="inboxCount" class="tag"></span></h2>
+    <p class="muted" style="margin-top:0">声を聞いて、博物館に入れるか決めてください。決めるまで残りません。</p>
+    <div id="pending"></div>
+  </section>
+
+  <section class="card">
+    <h2>展示 <span id="count" class="tag">0</span></h2>
+    <div id="list"></div>
+    <div class="row" style="margin-top:10px">
+      <button id="seed" class="ghost">例を入れる（デモ用）</button>
+    </div>
+  </section>
+</main>
+
+<script type="module">
+import { registerEntry, graduate } from '/lib/mistakes.js';
+import { loadMuseum, saveMuseum, loadPending, savePending, today, playClip } from '/lib/store.js';
+const $ = (id) => document.getElementById(id);
+const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+
+function playBtn(clipId) {
+  const b = el('button', 'ghost play', '声を聞く');
+  b.onclick = async () => { if (!(await playClip(clipId))) b.textContent = '音声がありません'; };
+  return b;
+}
+
+function wordLine(wrong, right) {
+  const w = el('div', 'word');
+  w.append(el('span', 'wrong', wrong), ` → ${right}`);
+  return w;
+}
+
+function renderPending() {
+  const list = loadPending();
+  $('inbox').hidden = !list.length;
+  $('inboxCount').textContent = `${list.length}件`;
+  const box = $('pending'); box.replaceChildren();
+  for (const p of list) {
+    const d = el('div', 'entry');
+    d.append(wordLine(p.wrong, p.right));
+    if (p.quote) d.append(el('div', 'muted', `「${p.quote}」`));
+    const row = el('div', 'row'); row.style.marginTop = '8px';
+    if (p.clipId) row.append(playBtn(p.clipId));
+    const yes = el('button', '', '収蔵する');
+    const no = el('button', 'ghost', '見送る');
+    yes.onclick = () => {
+      saveMuseum(registerEntry(loadMuseum(), p, { date: p.date, clipId: p.clipId }));
+      savePending(loadPending().filter((x) => x.id !== p.id)); render();
+    };
+    no.onclick = () => { savePending(loadPending().filter((x) => x.id !== p.id)); render(); };
+    row.append(yes, no); d.append(row); box.append(d);
+  }
+}
+
+function renderMuseum() {
+  const list = loadMuseum();
+  $('count').textContent = list.length;
+  const box = $('list'); box.replaceChildren();
+  if (!list.length) { box.append(el('div', 'empty', 'まだ展示はありません。子ども部屋で言い間違いが見つかると、ここに届きます。')); return; }
+  for (const e of [...list].reverse()) {
+    const d = el('div', 'entry');
+    d.append(wordLine(e.wrong, e.right));
+    const meta = el('div', 'muted', `${e.count}回　はじめて: ${e.firstDate ?? '—'}`);
+    if (e.graduatedDate) meta.append(' ', el('span', 'tag', `卒業 ${e.graduatedDate}`));
+    d.append(meta);
+    const row = el('div', 'row'); row.style.marginTop = '8px';
+    const clip = e.clipIds?.[e.clipIds.length - 1];
+    if (clip) row.append(playBtn(clip));
+    if (!e.graduatedDate) {
+      const g = el('button', 'ghost', '正しく言えた（卒業）');
+      g.onclick = () => { saveMuseum(graduate(loadMuseum(), e.wrong, today())); render(); };
+      row.append(g);
+    }
+    d.append(row); box.append(d);
+  }
+}
+
+function render() { renderPending(); renderMuseum(); }
+
+$('seed').onclick = () => {
+  let m = loadMuseum();
+  m = registerEntry(m, { wrong: 'とうもころし', right: 'とうもろこし', note: '' }, { date: '2026-11-18' });
+  m = registerEntry(m, { wrong: 'とうもころし', right: 'とうもろこし', note: '' }, { date: '2026-11-21' });
+  m = registerEntry(m, { wrong: 'えべれーたー', right: 'エレベーター', note: '' }, { date: '2026-11-10' });
+  m = graduate(m, 'えべれーたー', '2026-11-20');
+  saveMuseum(m); render();
+};
+
+window.addEventListener('storage', render); // 子ども部屋の画面で見つかったら、すぐ反映
+render();
+</script>
+</body>
+</html>
