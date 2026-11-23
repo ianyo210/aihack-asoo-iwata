@@ -205,6 +205,10 @@ test('子どもの情報: 追加・上限・更新・削除・年齢', () => {
   c = updateChild(c, 'ch-2', { name: 'そらと', birthday: '2021-02-01' });
   assert.equal(c[1].name, 'そらと'); assert.equal(c[1].birthday, '2021-02-01');
   assert.equal(updateChild(c, 'ch-2', { name: '   ' })[1].name, 'そらと'); // 空の名前は無視
+  const withIcon = updateChild(c, 'ch-2', { avatarId: 'av-1' });
+  assert.equal(withIcon[1].avatarId, 'av-1');                         // アイコンを登録
+  assert.equal(updateChild(withIcon, 'ch-2', { avatarId: '' })[1].avatarId, null); // はずす
+  assert.equal(updateChild(withIcon, 'ch-2', { name: 'そら' })[1].avatarId, 'av-1'); // 名前を変えても残る
   c = removeChild(c, 'ch-1'); assert.equal(c.length, 1);
   assert.deepEqual(addChild(c, { name: 'みお' }).map((x) => x.id), ['ch-2', 'ch-3']); // 削除のあとでも番号は重ならない
   assert.equal(ageText('2023-07-15', new Date('2026-11-23T12:00:00')), '3歳4か月');

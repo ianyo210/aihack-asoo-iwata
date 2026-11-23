@@ -178,4 +178,31 @@ dl.freq dd{margin:0;font-weight:700}
 .letters .tx{font-family:var(--font-head);line-height:1.6;min-width:0}
 .letters .tx b{font-weight:400;color:var(--rose);font-size:20px}
 .letters .tx small{display:block;font:13px/1.5 var(--font-body);color:var(--muted)}
+/* 子どものアイコン */
+.kid img.av{width:24px;height:24px;border-radius:50%;object-fit:cover;border:1.5px solid var(--line);flex:none}
+.avpick{display:inline-flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;font-size:11px;color:var(--muted);line-height:1.2}
+.avpick .avbig{width:52px;height:52px;border-radius:50%;object-fit:cover;border:2px solid var(--line);display:block}
+.avpick:focus-within{outline:3px solid var(--sun);outline-offset:3px;border-radius:12px}
+#shWho .kid{font-size:15px}
+
+/* 起動時: ことば鳥が飛んでくる */
+.intro{position:fixed;inset:0;z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;
+  background:radial-gradient(ellipse 60% 40% at 0% 0%, var(--leaf-soft) 0, transparent 70%),radial-gradient(ellipse 50% 35% at 100% 18%, var(--sky-soft) 0, transparent 70%),var(--paper);
+  transition:opacity .45s ease}
+.intro.out{opacity:0;pointer-events:none}
+.intro-fly{position:relative;width:min(56vw,220px)}
+.intro-fly img{width:100%;height:auto;display:block}
+.intro .env{position:absolute;width:30%;right:-4%;top:52%;transform:rotate(-12deg);display:none}
+.intro.with-mail .env{display:block}
+.intro-tx{margin:0;font:400 32px/1.25 var(--font-head);text-align:center;color:var(--leaf)}
+.intro-tx .mirror{display:inline-block;transform:scaleX(-1);color:var(--sky)}
+.intro-tx .tilt{display:inline-block;transform:rotate(-9deg);color:var(--rose)}
+@media (prefers-reduced-motion:no-preference){
+  .intro-fly{animation:introFly 1.5s cubic-bezier(.22,.8,.3,1) both}
+  .intro-fly img{animation:flapIntro .32s ease-in-out infinite alternate}
+  .intro-tx{animation:fadeUp .6s ease-out 1.15s both}
+  @keyframes introFly{0%{transform:translate(70vw,-55vh) rotate(-18deg) scale(.55)}55%{transform:translate(-6vw,3vh) rotate(7deg) scale(1.04)}78%{transform:translate(2vw,-2vh) rotate(-3deg)}100%{transform:none}}
+  @keyframes flapIntro{to{transform:scaleY(.93) translateY(2px)}}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+}
 .paper .from{margin:8px 0 0;text-align:right;font:400 18px/34px var(--font-head);display:flex;justify-content:flex-end;align-items:center;gap:6px}

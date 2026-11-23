@@ -9,6 +9,14 @@
 <link rel="stylesheet" href="/ui.css">
 </head>
 <body>
+<div id="intro" class="intro" aria-hidden="true">
+  <div class="intro-fly">
+    <img src="/assets/ui/07-flying-bird.png" alt="" width="200" height="202">
+    <svg class="env" viewBox="0 0 64 46"><rect x="2" y="3" width="60" height="40" rx="6" fill="#FFF8E7" stroke="#8B6E4E" stroke-width="2.6"/><path d="M4 7 L32 27 L60 7" fill="none" stroke="#8B6E4E" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M32 33 C27 28 25 25 28 23 C30 22 32 24 32 25 C32 24 34 22 36 23 C39 25 37 28 32 33 Z" fill="#E28C8C" stroke="#8B6E4E" stroke-width="1.4"/></svg>
+  </div>
+  <p class="intro-tx">いいま<span class="mirror">ち</span>がい<br>と<span class="tilt">し</span>ょかん</p>
+</div>
+
 <main class="wrap">
   <div class="top">
     <h1 class="logo" aria-label="言い間違い図書館">
@@ -148,7 +156,21 @@ const stageName = (graduated, n) => (graduated ? '卒業' : n >= 4 ? 'ことば�
 // ---- 子ども（数名）----
 let filter = 'all'; // 'all' | 子どもの id | '?'（だれか分からない）
 const childOf = (id) => loadChildren().find((c) => c.id === id);
-function kidTag(c) { const t = el('span', 'kid'), d = el('i'); d.style.background = c.color; t.append(d, c.name); return t; }
+// 子どものアイコン（ブラウザ内に保存した画像）。読み込んだ URL を覚えておく
+const avatarCache = new Map();
+async function ensureAvatars() {
+  let changed = false;
+  for (const k of loadChildren()) {
+    if (k.avatarId && !avatarCache.has(k.avatarId)) { avatarCache.set(k.avatarId, await imageUrl(k.avatarId)); changed = true; }
+  }
+  return changed;
+}
+function avatarNode(c, cls = 'av') {
+  const u = c.avatarId && avatarCache.get(c.avatarId);
+  if (u) return Object.assign(el('img', cls), { src: u, alt: '' });
+  const d = el('i', cls === 'av' ? '' : cls); d.style.background = c.color; return d;
+}
+function kidTag(c) { const t = el('span', 'kid'); t.append(avatarNode(c), c.name); return t; }
 
 function renderKids(events) {
   const kids = loadChildren(), bar = $('kidsBar'); bar.replaceChildren();
@@ -168,7 +190,23 @@ function openKids() { renderKidsList(); $('kidMsg').textContent = ''; $('kids').
 function renderKidsList() {
   const kids = loadChildren(), box = $('kidsList'); box.replaceChildren();
   for (const k of kids) {
-    const row = el('div', 'kidrow'), dot = el('i'); dot.style.background = k.color;
+    const row = el('div', 'kidrow');
+    // アイコン: 押すと写真やイラストを選べる（縮小して、ブラウザの中だけに保存）
+    const pick = el('label', 'avpick');
+    const fileIn = el('input'); fileIn.type = 'file'; fileIn.accept = 'image/*'; fileIn.hidden = true;
+    fileIn.setAttribute('aria-label', `${k.name}のアイコンをえらぶ`);
+    pick.append(avatarNode(k, 'avbig'), el('span', '', k.avatarId ? 'かえる' : 'アイコン'), fileIn);
+    fileIn.onchange = async () => {
+      const f = fileIn.files?.[0]; if (!f) return;
+      try {
+        const blob = await resizeImage(f, 256), id = `av-${k.id}-${Date.now()}`;
+        if (!(await putClip(id, blob))) throw new Error('保存できませんでした');
+        avatarCache.set(id, URL.createObjectURL(blob));
+        saveChildren(updateChild(loadChildren(), k.id, { avatarId: id }));
+        renderKidsList(); render();
+      } catch { $('kidMsg').textContent = 'この画像は読み込めませんでした'; }
+    };
+    const dot = pick;
     const name = el('input'); name.type = 'text'; name.value = k.name; name.maxLength = 12; name.setAttribute('aria-label', '名前');
     const bd = el('input'); bd.type = 'date'; bd.value = k.birthday ?? ''; bd.setAttribute('aria-label', `${k.name}の誕生日`);
     const age = el('span', 'muted', ageText(k.birthday));
@@ -182,7 +220,13 @@ function renderKidsList() {
       saveMuseum(s.museum); saveEvents(s.events); saveChildren(removeChild(loadChildren(), k.id));
       renderKidsList(); render();
     };
-    const f = el('div', 'f'); f.append(bd, age, del);
+    const f = el('div', 'f'); f.append(bd, age);
+    if (k.avatarId) {
+      const off = el('button', 'quiet', 'アイコンをはずす'); off.type = 'button';
+      off.onclick = () => { saveChildren(updateChild(loadChildren(), k.id, { avatarId: null })); renderKidsList(); render(); };
+      f.append(off);
+    }
+    f.append(del);
     row.append(dot, name, f); box.append(row);
   }
 }
@@ -330,7 +374,7 @@ async function openSheet(id) {
   $('shStage').alt = stageName(Boolean(e.graduatedDate), total);
   $('shDone').hidden = !e.graduatedDate;
   const k = childOf(e.childId), age = k ? ageText(k.birthday) : '';
-  $('shWho').textContent = k ? `${k.name}${age ? `（${age}）` : ''}` : '';
+  $('shWho').replaceChildren(...(k ? [kidTag(k), age ? `（${age}）` : ''] : []));
   fillFreq(id);
   $('shRight').value = e.right ?? '';
   $('shGrad').value = e.graduatedDate ?? '';
@@ -398,7 +442,20 @@ $('seed').onclick = () => {
 };
 
 window.addEventListener('storage', render); // 子ども部屋で見つかったら、すぐ反映
+
+// 起動時: ことば鳥が飛んでくる（新着があれば、手紙をくわえて）。押すと飛ばせる
+(function intro() {
+  const box = $('intro'); if (!box) return;
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) { box.remove(); return; }
+  if (unreadNow().length) box.classList.add('with-mail');
+  let gone = false;
+  const done = () => { if (gone) return; gone = true; box.classList.add('out'); setTimeout(() => box.remove(), 450); };
+  box.addEventListener('click', done);
+  setTimeout(done, 2300);
+})();
+
 render();
+ensureAvatars().then((changed) => { if (changed) render(); });
 </script>
 </body>
 </html>
