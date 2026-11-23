@@ -1,4 +1,4 @@
-# 要件と設計: 言い間違い博物館
+# 要件と設計: 言い間違い図書館
 
 2026-11-23 作成。方針は MISSIONS.md の「方針転換」と JOURNEY.md に従う。締切は 15:00。
 
@@ -14,7 +14,7 @@
 1. 子どもの声を録音して、Aqua Voice で**素の文字起こし**にする
 2. 文字起こしから「言い間違いの候補」を取り出す（例: てビリ → テレビ）
 3. お母さんが候補を**確認して決める**（収蔵する／見送る）
-4. 収蔵した言い間違いを「博物館」に、**音声クリップ付き**で並べる
+4. 収蔵した言い間違いを「図書館」に、**音声クリップ付き**で並べる
 5. 外部 API が不調でも止まらない（台本のフォールバック）
 
 ### あれば良い
@@ -28,7 +28,7 @@
 | 部品 | 役割 | 置き場所 |
 | --- | --- | --- |
 | room 画面 | マイク許可、声検出（VAD）で区切って録音、サーバーへ送る | index.html |
-| mom 画面 | 候補を確認、博物館を見る | index.html |
+| mom 画面 | 候補を確認、図書館を見る | index.html |
 | サーバー関数 | 文字起こしと候補抽出 | Vercel の api/ |
 | 外部 API | Aqua Voice（文字起こし）、Gemini（候補抽出） | — |
 
@@ -44,7 +44,7 @@ POST /api/detect: 言い間違い候補の抽出
   ├ Gemini（文脈から {wrong, right, note} を返す）
   └ 失敗時: 辞書ルール（既知の言い間違い）にフォールバック
   ↓ 候補 ＋ 音声クリップ
-mom: 確認（収蔵する／見送る） → 博物館に保存（音声つき）
+mom: 確認（収蔵する／見送る） → 図書館に保存（音声つき）
 ```
 
 ### 関数に分ける（純粋なロジックから作る）
@@ -54,13 +54,13 @@ mom: 確認（収蔵する／見送る） → 博物館に保存（音声つき�
 | `detectByRules(text)` | 文字列 → 候補[]（辞書と音の近さ） | なし |
 | `detectByGemini(text)` | 文字列 → 候補[] | Gemini |
 | `detectMistakes(text)` | Gemini を試し、失敗したらルールに切替 | 上記を利用 |
-| `registerEntry(museum, entry)` | 博物館に追加（重複は回数を足す） | なし |
+| `registerEntry(museum, entry)` | 図書館に追加（重複は回数を足す） | なし |
 | `graduate(museum, word, date)` | 正しく言えた日を記録 | なし |
 
 候補の形: `{ wrong, right, note, clipId }`
 
 ## 5. データ
-博物館の1件: `{ id, wrong, right, note, firstDate, count, clipId, graduatedDate? }`。音声クリップはブラウザ内（IndexedDB）に置き、外部に出さない。
+図書館の1件: `{ id, wrong, right, note, firstDate, count, clipId, graduatedDate? }`。音声クリップはブラウザ内（IndexedDB）に置き、外部に出さない。
 
 ## 6. 環境変数（Vercel の Environment Variables）
 - `AQUA_API_KEY`（Aqua Voice。scope は `transcription`）

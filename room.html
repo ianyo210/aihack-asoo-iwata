@@ -2,51 +2,37 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#1F7A6D">
-<title>子ども部屋 | 言い間違い博物館</title>
+<title>子ども部屋 | 言い間違い図書館</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&family=Zen+Maru+Gothic:wght@700&display=swap">
 <link rel="stylesheet" href="/ui.css">
 </head>
 <body>
-<main class="wrap">
-  <div class="top">
-    <h1>子ども部屋</h1>
-    <nav><a href="/museum.html">お母さんの画面へ</a></nav>
-  </div>
+<main class="stage">
+  <div id="status" class="status" aria-live="polite">おやすみ中</div>
+  <button id="main" class="big" type="button">スタート</button>
+  <p id="hint" class="hint">おすと、おへやの こえを きくよ</p>
+  <p id="note" class="note" aria-live="polite"></p>
 
-  <section class="card" aria-label="見守り">
-    <div class="row" style="justify-content:space-between">
-      <span class="pill"><span id="dot" class="dot"></span><span id="state">待機中</span></span>
-      <button id="start">はじめる</button>
-    </div>
-    <p class="muted" style="margin:10px 0 8px">設置のときに、マイクの許可を1回だけお願いします。声が聞こえたときだけ録音し、お母さんが決めるまで何も残りません。</p>
-    <div class="meter" aria-hidden="true"><i id="level"></i></div>
-  </section>
+  <form id="demoForm" hidden class="row" style="width:100%;max-width:420px">
+    <input id="demo" type="text" value="てびり みたいなー" aria-label="デモ用: 子どもが言った言葉" style="flex:1;min-width:0">
+    <button class="ghost" type="submit">送る</button>
+  </form>
 
-  <section class="card" aria-live="polite">
-    <h2>いま聞こえた言葉</h2>
-    <div id="heard" class="heard muted">まだありません</div>
-    <div id="result" class="muted"></div>
-  </section>
-
-  <section class="card">
-    <h2>マイクが使えないとき（デモ用）</h2>
-    <p class="muted" style="margin-top:0">子どもが言ったとおりに入力して送ると、同じ流れで確かめられます。</p>
-    <div class="row">
-      <input id="demo" type="text" value="てびり みたいなー" aria-label="子どもが言った言葉" style="flex:1;min-width:0">
-      <button id="send" class="ghost">送る</button>
-    </div>
-  </section>
+  <a class="link" href="/museum.html">おかあさん用</a>
 </main>
 
 <script type="module">
-import { addPending, putClip, today } from '/lib/store.js';
+import { recordCandidates, putClip } from '/lib/store.js';
 const $ = (id) => document.getElementById(id);
 const say = (el, t) => { el.textContent = t; };
 
 const QUIET_MS = 1500, MIN_MS = 600, MAX_MS = 10000, LOUD = 14;
-let stream, ctx, timer, rec, chunks = [], speaking = false, startedAt = 0, quietSince = 0;
+let stream, ctx, timer, rec, wake, chunks = [], speaking = false, startedAt = 0, quietSince = 0;
+
+const params = new URLSearchParams(location.search);
+if (params.get('demo') === '1') $('demoForm').hidden = false; // マイクが使えない場面用（子どもには見せない）
 
 function pickType() {
   for (const t of ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg']) {
@@ -55,45 +41,38 @@ function pickType() {
   return '';
 }
 
-function setState(text, mode) {
-  say($('state'), text);
-  $('dot').className = 'dot' + (mode ? ' ' + mode : '');
+function show(listening) {
+  $('main').textContent = listening ? 'おわり' : 'スタート';
+  $('main').classList.toggle('stop', listening);
+  $('main').classList.remove('hearing');
+  say($('status'), listening ? 'きいてるよ' : 'おやすみ中');
+  say($('hint'), listening ? 'おわるときは おしてね' : 'おすと、おへやの こえを きくよ');
 }
 
-// 文字 → 言い間違いの候補 → お母さんの画面へ
-async function deliver(text, clipId) {
-  say($('heard'), text); $('heard').classList.remove('muted');
-  say($('result'), '言い間違いを探しています…');
+// 文字 → 言い間違いの候補 → お母さんの画面へ（子どもには結果を見せない）
+async function deliver(text, clipId, segments = []) {
   try {
-    const r = await fetch('/api/detect', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ text }) }).then((x) => x.json());
+    const r = await fetch('/api/detect', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ text, segments }) }).then((x) => x.json());
     if (!r.ok) throw new Error(r.error || '失敗');
-    const items = r.candidates.map((c, i) => ({ ...c, id: `p-${Date.now()}-${i}`, clipId, date: today(), text }));
-    addPending(items);
-    say($('result'), items.length ? `見つけました: ${items.map((c) => `${c.wrong}→${c.right}`).join('、')}。お母さんの画面に届けました。` : '言い間違いはありませんでした。');
-  } catch (e) {
-    say($('result'), '探せませんでした。もう一度お試しください。');
-  }
+    recordCandidates(r.candidates, { clipId }); // お母さんの確認なしで、図書館と記録に入る
+    say($('note'), r.candidates.length ? 'おかあさんに とどけたよ' : '');
+  } catch { say($('note'), 'うまくいかなかったよ'); }
 }
 
 async function onClip(blob, type) {
-  setState('文字にしています', 'on');
   const clipId = `c-${Date.now()}`;
   await putClip(clipId, blob);
   try {
     const resp = await fetch('/api/transcribe', { method: 'POST', headers: { 'content-type': 'application/octet-stream', 'x-audio-type': type || 'audio/webm' }, body: blob });
     const r = await resp.json();
     if (!resp.ok || !r.ok) throw new Error(r.error || `エラー ${resp.status}`);
-    if (r.text) await deliver(r.text, clipId); else say($('result'), '聞き取れませんでした。');
-  } catch (e) {
-    say($('result'), `文字にできませんでした（${e.message}）。下のデモ入力をお使いください。`);
-  }
-  if (stream) setState('聞いています', 'on');
+    if (r.text) await deliver(r.text, clipId, r.segments);
+  } catch { say($('note'), 'うまくいかなかったよ'); }
 }
 
 function tick(an, buf, type) {
   an.getByteTimeDomainData(buf);
   let peak = 0; for (const v of buf) peak = Math.max(peak, Math.abs(v - 128));
-  $('level').style.width = Math.min(100, peak * 4) + '%';
   const now = Date.now();
   if (peak > LOUD) {
     quietSince = now;
@@ -101,32 +80,36 @@ function tick(an, buf, type) {
       speaking = true; startedAt = now; chunks = [];
       rec = new MediaRecorder(stream, type ? { mimeType: type } : undefined);
       rec.ondataavailable = (e) => e.data.size && chunks.push(e.data);
-      rec.onstop = () => { const len = Date.now() - startedAt; if (len >= MIN_MS) onClip(new Blob(chunks, { type: type || 'audio/webm' }), type); };
-      rec.start(); setState('聞き取り中', 'rec');
+      rec.onstop = () => { if (Date.now() - startedAt >= MIN_MS) onClip(new Blob(chunks, { type: type || 'audio/webm' }), type); };
+      rec.start(); $('main').classList.add('hearing');
     }
   }
   if (speaking && (now - quietSince > QUIET_MS || now - startedAt > MAX_MS)) {
-    speaking = false; rec.stop(); setState('聞いています', 'on');
+    speaking = false; rec.stop(); $('main').classList.remove('hearing');
   }
 }
 
-$('start').onclick = async () => {
-  if (stream) { // とめる
-    stream.getTracks().forEach((t) => t.stop()); stream = null; clearInterval(timer); ctx?.close();
-    setState('待機中'); say($('start'), 'はじめる'); $('level').style.width = '0'; return;
-  }
+async function start() {
   try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
-  catch { setState('マイクが許可されていません'); return; }
+  catch { say($('note'), 'マイクを ゆるしてね'); return; }
   ctx = new AudioContext();
   const an = ctx.createAnalyser(); an.fftSize = 512;
   ctx.createMediaStreamSource(stream).connect(an);
   const buf = new Uint8Array(an.fftSize), type = pickType();
   timer = setInterval(() => tick(an, buf, type), 120);
-  setState('聞いています', 'on'); say($('start'), 'とめる');
-};
+  try { wake = await navigator.wakeLock?.request('screen'); } catch { /* 画面が消えても動く端末もある */ }
+  say($('note'), ''); show(true);
+}
 
-$('send').onclick = () => { const t = $('demo').value.trim(); if (t) deliver(t, null); };
-$('demo').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('send').click(); });
+function stop() {
+  if (speaking && rec) { speaking = false; rec.stop(); } // 話している途中でも、そこまでを残す
+  stream?.getTracks().forEach((t) => t.stop()); stream = null;
+  clearInterval(timer); ctx?.close(); wake?.release?.(); wake = null;
+  show(false);
+}
+
+$('main').onclick = () => (stream ? stop() : start());
+$('demoForm').onsubmit = (e) => { e.preventDefault(); const t = $('demo').value.trim(); if (t) deliver(t, null); };
 </script>
 </body>
 </html>

@@ -1,6 +1,6 @@
 // POST /api/detect  { text, museum? }  →  { ok, source, candidates, graduations }
 // 言い間違いの候補を返す。Gemini が使えなくても辞書ルールで必ず返事をする。
-import { detectMistakes, findGraduationHints } from '../lib/mistakes.js';
+import { detectMistakes, findGraduationHints, attributeSpeakers } from '../lib/mistakes.js';
 import { detectByGemini } from '../lib/gemini.js';
 import { detectByOpenRouter } from '../lib/openrouter.js';
 
@@ -31,12 +31,15 @@ export default async function handler(req, res) {
   if (req.method === 'GET') return json(res, 200, { ok: true, llm: pickLlm()?.name ?? 'rules-only' });
   if (req.method !== 'POST') return json(res, 405, { ok: false, error: 'Method Not Allowed' });
   try {
-    const { text = '', museum = [] } = await readJson(req);
+    const { text = '', museum = [], segments = [] } = await readJson(req);
+    const segs = Array.isArray(segments) ? segments.map((s) => ({ speaker: s?.speaker ?? null, text: String(s?.text ?? '') })).filter((s) => s.text) : [];
+    const body = String(text || segs.map((s) => s.text).join('\n')).slice(0, 4000);
     const llm = pickLlm();
-    const { source, candidates, aiError } = await detectMistakes(String(text).slice(0, 4000), { llm: llm?.run });
+    const { source, candidates, aiError } = await detectMistakes(body, { llm: llm?.run });
     if (aiError) console.warn(`detect: ${llm.name} 失敗 → ルールに切替:`, aiError);
-    const graduations = findGraduationHints(Array.isArray(museum) ? museum : [], String(text));
-    return json(res, 200, { ok: true, source, candidates, graduations });
+    const graduations = findGraduationHints(Array.isArray(museum) ? museum : [], body);
+    // 誰が言ったか（話者ラベル）を、それぞれの候補に付ける
+    return json(res, 200, { ok: true, source, candidates: attributeSpeakers(candidates, segs), graduations });
   } catch (e) {
     return json(res, 400, { ok: false, error: e?.message || 'bad request' });
   }

@@ -118,5 +118,5 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`言い間違い博物館 & みまもりママコーチ サーバー起動: http://localhost:${PORT}`);
+  console.log(`言い間違い図書館 & みまもりママコーチ サーバー起動: http://localhost:${PORT}`);
 });

@@ -3,7 +3,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   toHiragana, normalizeTranscript, detectByRules, sanitizeCandidates, detectMistakes,
-  registerEntry, graduate, findGraduationHints,
+  registerEntry, graduate, findGraduationHints, updateEntry, removeEntry,
+  recordSighting, frequencyOf, nthSighting,
+  attributeSpeakers, addChild, updateChild, removeChild, ageText, defaultChildId, assignChild, CHILD_LIMIT,
 } from '../lib/mistakes.js';
 import { detectByGemini } from '../lib/gemini.js';
 import { detectByOpenRouter } from '../lib/openrouter.js';
@@ -110,6 +112,143 @@ test('findGraduationHints: 正しい言い方だけ出たら卒業の候補', ()
   assert.equal(findGraduationHints(m, 'テレビ みたい').length, 1);
   assert.equal(findGraduationHints(m, 'テレビ じゃなくて てビリ みたい').length, 0);
   assert.equal(findGraduationHints(graduate(m, 'てビリ', '2026-11-23'), 'テレビ みたい').length, 0);
+});
+
+test('updateEntry: 訂正・写真・卒業の日を直せる。不正な日付は無視。元の配列は変えない', () => {
+  const m = registerEntry([], { wrong: 'てビリ', right: 'テレビ' }, { date: '2026-11-20' });
+  const id = m[0].id;
+  const u = updateEntry(m, id, { right: '  テレビ番組 ', photoId: 'ph-1', graduatedDate: '2026-11-23' });
+  assert.equal(u[0].right, 'テレビ番組');
+  assert.equal(u[0].photoId, 'ph-1');
+  assert.equal(u[0].graduatedDate, '2026-11-23');
+  assert.equal(m[0].right, 'テレビ'); // 元は変わらない
+  assert.equal(updateEntry(u, id, { graduatedDate: '2026/11/23' })[0].graduatedDate, '2026-11-23'); // 形が違う
+  assert.equal(updateEntry(u, id, { graduatedDate: '2026-13-45' })[0].graduatedDate, '2026-11-23'); // 存在しない日
+  assert.equal(updateEntry(u, id, { graduatedDate: null })[0].graduatedDate, null); // 卒業を取り消す
+  assert.equal(updateEntry(u, id, { id: 'x', count: 99 })[0].count, 1); // 直せない項目は無視
+  assert.equal(updateEntry(u, 'ない', { right: 'x' })[0].right, 'テレビ番組');
+});
+
+test('removeEntry: 図書館から外す', () => {
+  const m = registerEntry(registerEntry([], { wrong: 'てビリ', right: 'テレビ' }), { wrong: 'とうもころし', right: 'とうもろこし' });
+  assert.equal(removeEntry(m, m[0].id).length, 1);
+  assert.equal(m.length, 2);
+});
+
+test('recordSighting: 初めては新しく作り、2回目からは回数を足す。記録は新しい順', () => {
+  let s = { museum: [], events: [] };
+  s = recordSighting(s, { wrong: 'てビリ', right: 'テレビ' }, { at: '2026-11-18T09:00:00', clipId: 'a', quote: 'てビリ みたい' });
+  s = recordSighting(s, { wrong: 'てビリ', right: 'テレビ' }, { at: '2026-11-21T18:30:00', clipId: 'b' });
+  assert.equal(s.museum.length, 1);
+  assert.equal(s.museum[0].count, 2);
+  assert.equal(s.museum[0].firstDate, '2026-11-18');
+  assert.equal(s.events.length, 2);
+  assert.equal(s.events[0].at, '2026-11-21T18:30:00'); // 新しい順
+  assert.equal(s.events[1].quote, 'てビリ みたい');
+  assert.equal(s.events[0].entryId, s.museum[0].id);
+  assert.deepEqual(recordSighting(undefined, { wrong: 'x', right: 'y' }, { at: '2026-11-23T10:00:00' }).events.length, 1);
+});
+
+test('frequencyOf: 通算・直近7日・1週間あたり・日別', () => {
+  let s = { museum: [], events: [] };
+  const c = { wrong: 'てビリ', right: 'テレビ' };
+  for (const at of ['2026-11-02T08:00:00', '2026-11-18T09:00:00', '2026-11-21T18:30:00', '2026-11-21T19:00:00', '2026-11-23T07:10:00']) s = recordSighting(s, c, { at });
+  s = recordSighting(s, { wrong: 'ぱんだ', right: 'パンダ' }, { at: '2026-11-22T10:00:00' });
+  const id = s.museum[0].id;
+  const f = frequencyOf(s.events, id, '2026-11-23T12:00:00');
+  assert.equal(f.total, 5);
+  assert.equal(f.firstAt, '2026-11-02T08:00:00');
+  assert.equal(f.lastAt, '2026-11-23T07:10:00');
+  assert.equal(f.last7, 4); // 11/18（5日と3時間前）、11/21 が2回、11/23 が1回。11/02 は含まない
+  assert.deepEqual(f.days.slice(0, 2), [{ date: '2026-11-23', count: 1 }, { date: '2026-11-21', count: 2 }]);
+  assert.equal(f.perWeek, 1.7); // 5回 ÷ 約3.02週（11/02 08:00 〜 11/23 12:00）
+  assert.deepEqual(frequencyOf(s.events, 'w-ない'), { total: 0, firstAt: null, lastAt: null, last7: 0, perWeek: 0, days: [] });
+});
+
+test('nthSighting: その言葉の何回目か', () => {
+  let s = { museum: [], events: [] };
+  for (const at of ['2026-11-18T09:00:00', '2026-11-21T18:30:00']) s = recordSighting(s, { wrong: 'てビリ', right: 'テレビ' }, { at });
+  const [latest, first] = s.events;
+  assert.equal(nthSighting(s.events, first), 1);
+  assert.equal(nthSighting(s.events, latest), 2);
+});
+
+test('normalizeTranscript: Aqua の diarized_json（turns）から話者つきの文を取る', () => {
+  const r = normalizeTranscript({
+    text: 'てびり みたい。ぼくも',
+    speakers: [{ id: 'spk_0' }, { id: 'spk_1' }],
+    turns: [{ speaker: 'spk_0', start: 0.1, end: 2, text: 'てびり みたい', words: [] }, { speaker: 'spk_1', start: 2.5, end: 3, text: 'ぼくも' }],
+  });
+  assert.deepEqual(r.segments, [
+    { speaker: 'spk_0', text: 'てびり みたい', start: 0.1, end: 2 },
+    { speaker: 'spk_1', text: 'ぼくも', start: 2.5, end: 3 },
+  ]);
+});
+
+test('attributeSpeakers: 言い間違いを、それを言った話者に結びつける', () => {
+  const segs = [{ speaker: 'spk_0', text: 'ぼくも あそぶ' }, { speaker: 'spk_1', text: 'てビリ みたいなー' }];
+  const r = attributeSpeakers([{ wrong: 'てびり', right: 'テレビ' }, { wrong: 'ぷりん', right: 'プリン', quote: 'ぼくも あそぶ' }, { wrong: 'ない', right: 'x' }], segs);
+  assert.equal(r[0].speaker, 'spk_1'); // ひらがなとカタカナの違いは吸収
+  assert.equal(r[1].speaker, 'spk_0'); // wrong が見つからなければ引用文から
+  assert.equal(r[2].speaker, null);
+  assert.equal(attributeSpeakers([{ wrong: 'a', right: 'b' }])[0].speaker, null); // 話者なし
+});
+
+test('子どもの情報: 追加・上限・更新・削除・年齢', () => {
+  let c = addChild([], { name: ' ゆい ', birthday: '2023-07-15' });
+  c = addChild(c, { name: 'そら', birthday: 'ふせい' });
+  assert.deepEqual(c.map((x) => [x.id, x.name, x.birthday]), [['ch-1', 'ゆい', '2023-07-15'], ['ch-2', 'そら', null]]);
+  assert.notEqual(c[0].color, c[1].color);
+  assert.equal(addChild(c, { name: '  ' }), c); // 名前が空
+  let many = []; for (let i = 0; i < 9; i++) many = addChild(many, { name: `こ${i}` });
+  assert.equal(many.length, CHILD_LIMIT);
+  c = updateChild(c, 'ch-2', { name: 'そらと', birthday: '2021-02-01' });
+  assert.equal(c[1].name, 'そらと'); assert.equal(c[1].birthday, '2021-02-01');
+  assert.equal(updateChild(c, 'ch-2', { name: '   ' })[1].name, 'そらと'); // 空の名前は無視
+  c = removeChild(c, 'ch-1'); assert.equal(c.length, 1);
+  assert.deepEqual(addChild(c, { name: 'みお' }).map((x) => x.id), ['ch-2', 'ch-3']); // 削除のあとでも番号は重ならない
+  assert.equal(ageText('2023-07-15', new Date('2026-11-23T12:00:00')), '3歳4か月');
+  assert.equal(ageText('2026-09-01', new Date('2026-11-23T12:00:00')), '2か月');
+  assert.equal(ageText('2026-12-01', new Date('2026-11-23T12:00:00')), ''); // 未来
+  assert.equal(ageText(null), '');
+  assert.equal(defaultChildId([{ id: 'ch-1' }]), 'ch-1');
+  assert.equal(defaultChildId([{ id: 'ch-1' }, { id: 'ch-2' }]), null);
+  assert.equal(defaultChildId([]), null);
+});
+
+test('子どもごと: 同じ言葉でも、子どもが違えば別のカード', () => {
+  let s = { museum: [], events: [] };
+  s = recordSighting(s, { wrong: 'てビリ', right: 'テレビ', childId: 'ch-1' }, { at: '2026-11-20T09:00:00' });
+  s = recordSighting(s, { wrong: 'てビリ', right: 'テレビ', childId: 'ch-2' }, { at: '2026-11-21T09:00:00' });
+  s = recordSighting(s, { wrong: 'てビリ', right: 'テレビ', childId: 'ch-1' }, { at: '2026-11-22T09:00:00' });
+  assert.equal(s.museum.length, 2);
+  assert.equal(s.museum.find((m) => m.childId === 'ch-1').count, 2);
+  assert.equal(frequencyOf(s.events, s.museum.find((m) => m.childId === 'ch-2').id, '2026-11-23T00:00:00').total, 1);
+});
+
+test('assignChild: 同じ録音の同じ声はまとめて動く。別の声・別の録音は動かない', () => {
+  let s = { museum: [], events: [] };
+  const rec = (wrong, speaker, clipId, at) => { s = recordSighting(s, { wrong, right: 'x', speaker }, { at, clipId }); };
+  rec('てビリ', 'spk_0', 'c1', '2026-11-22T09:00:00');
+  rec('とうもころし', 'spk_0', 'c1', '2026-11-22T09:00:05'); // 同じ録音・同じ声
+  rec('ぱすた', 'spk_1', 'c1', '2026-11-22T09:00:08');       // 同じ録音・別の声
+  rec('てビリ', 'spk_0', 'c2', '2026-11-22T18:00:00');       // 別の録音
+  const first = s.events.find((e) => e.wrong === 'てビリ' && e.clipId === 'c1');
+  const a = assignChild(s, first.id, 'ch-1');
+  const byWrong = (w, clip) => a.events.find((e) => e.wrong === w && e.clipId === clip);
+  assert.equal(byWrong('てビリ', 'c1').childId, 'ch-1');
+  assert.equal(byWrong('とうもころし', 'c1').childId, 'ch-1'); // まとめて
+  assert.equal(byWrong('ぱすた', 'c1').childId, null);          // 別の声は動かない
+  assert.equal(byWrong('てビリ', 'c2').childId, null);          // 別の録音は動かない
+  // カードの数え直し: ch-1 の てビリ は1回、元の（誰か不明の）てビリ は c2 の1回
+  assert.equal(a.museum.find((m) => m.childId === 'ch-1' && m.wrong === 'てビリ').count, 1);
+  assert.equal(a.museum.find((m) => !m.childId && m.wrong === 'てビリ').count, 1);
+  assert.equal(s.events.find((e) => e.id === first.id).childId, null); // 元の state は変わらない
+  // 「わからない」に戻すと、元のカードに戻って合算される
+  const back = assignChild(a, first.id, null);
+  assert.equal(back.museum.find((m) => !m.childId && m.wrong === 'てビリ').count, 2);
+  assert.ok(!back.museum.some((m) => m.childId === 'ch-1' && m.wrong === 'てビリ')); // 空のカードは消える
+  assert.equal(assignChild(s, 'ない', 'ch-1').events, s.events); // 無い記録は何もしない
 });
 
 // ---- Gemini（本物は呼ばない。fetch を差し替える）----

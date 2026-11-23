@@ -2,109 +2,321 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#1F7A6D">
-<title>言い間違い博物館</title>
+<title>言い間違い図書館</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&family=Zen+Maru+Gothic:wght@700&display=swap">
 <link rel="stylesheet" href="/ui.css">
 </head>
 <body>
 <main class="wrap">
   <div class="top">
-    <h1>言い間違い博物館</h1>
-    <nav><a href="/room.html">子ども部屋へ</a></nav>
+    <h1>言い間違い図書館</h1>
+    <a class="link" href="/room.html">子ども部屋</a>
   </div>
+  <p id="summary" class="summary"></p>
+  <div id="kidsBar" class="chips" role="group" aria-label="子どもで絞り込む"></div>
 
-  <section id="inbox" class="card new" hidden aria-live="polite">
-    <h2>新しい言い間違い <span id="inboxCount" class="tag"></span></h2>
-    <p class="muted" style="margin-top:0">声を聞いて、博物館に入れるか決めてください。決めるまで残りません。</p>
-    <div id="pending"></div>
-  </section>
+  <div id="timeline" aria-live="polite"></div>
 
-  <section class="card">
-    <h2>展示 <span id="count" class="tag">0</span></h2>
-    <div id="list"></div>
-    <div class="row" style="margin-top:10px">
-      <button id="seed" class="ghost">例を入れる（デモ用）</button>
-    </div>
-  </section>
+  <div id="emptyBox" class="card" hidden>
+    <div class="empty">まだ記録はありません。子ども部屋で言い間違いが見つかると、ここに届きます。</div>
+    <div class="row" style="justify-content:center"><button id="seed" class="ghost" type="button">例を入れる（デモ用）</button></div>
+  </div>
 </main>
 
+<dialog id="kids" class="sheet" aria-labelledby="kidsTitle">
+  <h2 id="kidsTitle" style="font:700 18px var(--font-head);margin:0" tabindex="-1" autofocus>子どもの情報</h2>
+  <p class="muted" style="margin:4px 0 0">6人まで登録できます。誰が言ったかを分けて、頻度を数えます。</p>
+  <div id="kidsList"></div>
+  <label class="field" for="kidName">子どもを追加</label>
+  <div class="row grow">
+    <input id="kidName" type="text" maxlength="12" placeholder="名前（例: ゆい）" autocomplete="off">
+    <input id="kidBirth" type="date" aria-label="誕生日">
+  </div>
+  <div class="row" style="margin-top:10px"><button id="kidAdd" type="button">追加する</button><span id="kidMsg" class="muted" aria-live="polite"></span></div>
+  <div class="actions"><button id="kidsClose" class="ghost" type="button">閉じる</button></div>
+</dialog>
+
+<dialog id="who" class="sheet" aria-labelledby="whoWord">
+  <h2 id="whoWord" style="font:700 18px var(--font-head);margin:0" tabindex="-1" autofocus></h2>
+  <p class="muted" style="margin:4px 0 12px">同じ録音の同じ声の言い間違いは、まとめて同じ子にします。</p>
+  <div id="whoList" class="stack"></div>
+  <div class="actions"><button id="whoClose" class="ghost" type="button">閉じる</button></div>
+</dialog>
+
+<dialog id="sheet" class="sheet" aria-labelledby="shWord">
+  <div class="row" style="justify-content:space-between">
+    <div id="shWord" class="word" tabindex="-1" autofocus></div>
+    <span id="shDone" class="tag" hidden>卒業</span>
+  </div>
+  <div id="shWho" class="muted"></div>
+
+  <label class="field">頻度</label>
+  <dl id="shFreq" class="freq"></dl>
+
+  <label class="field">聞いた記録</label>
+  <ul id="shLog" class="log"></ul>
+
+  <label class="field" for="photoInput">写真</label>
+  <div id="shPhoto" class="photo"><span>写真はまだありません</span></div>
+  <div class="row" style="margin-top:8px">
+    <label class="btn ghost" for="photoInput" style="cursor:pointer">写真をえらぶ</label>
+    <button id="photoClear" class="quiet" type="button" hidden>写真をはずす</button>
+  </div>
+  <input id="photoInput" type="file" accept="image/*" hidden>
+
+  <label class="field" for="shRight">正しい言葉（訂正）</label>
+  <input id="shRight" type="text" maxlength="20" placeholder="例: テレビ" autocomplete="off">
+
+  <label class="field" for="shGrad">卒業した日</label>
+  <input id="shGrad" type="date">
+  <div class="row" style="margin-top:8px">
+    <button id="gradToday" class="ghost" type="button">今日にする</button>
+    <button id="gradClear" class="quiet" type="button">まだ卒業していない</button>
+  </div>
+
+  <div class="actions">
+    <button id="shClose" class="ghost" type="button">閉じる</button>
+    <button id="shSave" type="button">保存する</button>
+  </div>
+  <div style="text-align:center;margin-top:8px"><button id="shDelete" class="quiet" type="button">図書館から外す</button></div>
+</dialog>
+
 <script type="module">
-import { registerEntry, graduate } from '/lib/mistakes.js';
-import { loadMuseum, saveMuseum, loadPending, savePending, today, playClip } from '/lib/store.js';
+import { recordSighting, updateEntry, removeEntry, frequencyOf, nthSighting, graduate, assignChild, addChild, updateChild, removeChild, ageText, CHILD_LIMIT } from '/lib/mistakes.js';
+import { loadMuseum, saveMuseum, loadEvents, saveEvents, loadChildren, saveChildren, loadPending, savePending, nowLocal, today, playClip, putClip, resizeImage, imageUrl, recordCandidates } from '/lib/store.js';
 const $ = (id) => document.getElementById(id);
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+const urls = [];
+const keepUrl = (u) => { if (u) urls.push(u); return u; };
+const md = (d) => `${+d.slice(5, 7)}/${+d.slice(8, 10)}`;                    // 2026-11-23 → 11/23
+const hm = (at) => at.slice(11, 16);                                          // → 14:32
+const wk = (d) => new Date(`${d}T00:00:00`).toLocaleDateString('ja-JP', { weekday: 'short' });
+const dayLabel = (d) => {
+  const t = today(), y = new Date(Date.now() - 86400000).toLocaleDateString('sv-SE');
+  return d === t ? '今日' : d === y ? '昨日' : null; // それ以外は日付だけを見出しにする
+};
 
-function playBtn(clipId) {
-  const b = el('button', 'ghost play', '声を聞く');
-  b.onclick = async () => { if (!(await playClip(clipId))) b.textContent = '音声がありません'; };
+function playBtn(clipId, label = '声') {
+  const b = el('button', 'ghost mini play', label); b.type = 'button';
+  b.onclick = async (ev) => { ev.stopPropagation(); if (!(await playClip(clipId))) b.textContent = 'なし'; };
   return b;
 }
 
-function wordLine(wrong, right) {
-  const w = el('div', 'word');
-  w.append(el('span', 'wrong', wrong), ` → ${right}`);
-  return w;
+// 前の版が「確認待ち」に残したものは、確認なしで入れて空にする
+(function migrate() {
+  const p = loadPending();
+  if (!p.length) return;
+  for (const x of [...p].reverse()) recordCandidates([x], { at: `${x.date ?? today()}T12:00:00`, clipId: x.clipId });
+  savePending([]);
+})();
+
+// ---- 子ども（数名）----
+let filter = 'all'; // 'all' | 子どもの id | '?'（だれか分からない）
+const childOf = (id) => loadChildren().find((c) => c.id === id);
+function kidTag(c) { const t = el('span', 'kid'), d = el('i'); d.style.background = c.color; t.append(d, c.name); return t; }
+
+function renderKids(events) {
+  const kids = loadChildren(), bar = $('kidsBar'); bar.replaceChildren();
+  if (filter !== 'all' && filter !== '?' && !kids.some((k) => k.id === filter)) filter = 'all';
+  if (!kids.length) {
+    const b = el('button', 'ghost mini', '子どもを登録する'); b.type = 'button'; b.onclick = openKids; bar.append(b); return;
+  }
+  const mk = (id, content) => { const b = el('button', 'chip' + (filter === id ? ' on' : '')); b.type = 'button'; b.append(content); b.onclick = () => { filter = id; render(); }; return b; };
+  bar.append(mk('all', 'すべて'));
+  for (const k of kids) bar.append(mk(k.id, kidTag(k)));
+  if (events.some((e) => !kids.some((k) => k.id === e.childId))) bar.append(mk('?', 'だれか分からない'));
+  const set = el('button', 'chip quietchip', '子どもの情報'); set.type = 'button'; set.onclick = openKids; bar.append(set);
 }
 
-function renderPending() {
-  const list = loadPending();
-  $('inbox').hidden = !list.length;
-  $('inboxCount').textContent = `${list.length}件`;
-  const box = $('pending'); box.replaceChildren();
-  for (const p of list) {
-    const d = el('div', 'entry');
-    d.append(wordLine(p.wrong, p.right));
-    if (p.quote) d.append(el('div', 'muted', `「${p.quote}」`));
-    const row = el('div', 'row'); row.style.marginTop = '8px';
-    if (p.clipId) row.append(playBtn(p.clipId));
-    const yes = el('button', '', '収蔵する');
-    const no = el('button', 'ghost', '見送る');
-    yes.onclick = () => {
-      saveMuseum(registerEntry(loadMuseum(), p, { date: p.date, clipId: p.clipId }));
-      savePending(loadPending().filter((x) => x.id !== p.id)); render();
+function openKids() { renderKidsList(); $('kidMsg').textContent = ''; $('kids').showModal(); }
+
+function renderKidsList() {
+  const kids = loadChildren(), box = $('kidsList'); box.replaceChildren();
+  for (const k of kids) {
+    const row = el('div', 'kidrow'), dot = el('i'); dot.style.background = k.color;
+    const name = el('input'); name.type = 'text'; name.value = k.name; name.maxLength = 12; name.setAttribute('aria-label', '名前');
+    const bd = el('input'); bd.type = 'date'; bd.value = k.birthday ?? ''; bd.setAttribute('aria-label', `${k.name}の誕生日`);
+    const age = el('span', 'muted', ageText(k.birthday));
+    const save = () => { saveChildren(updateChild(loadChildren(), k.id, { name: name.value, birthday: bd.value || null })); age.textContent = ageText(bd.value); render(); };
+    name.onchange = save; bd.onchange = save;
+    const del = el('button', 'quiet', '削除'); del.type = 'button'; let armed = false;
+    del.onclick = () => {
+      if (!armed) { armed = true; del.textContent = 'もう一度おすと削除'; return; }
+      let s = { museum: loadMuseum(), events: loadEvents() }; // その子の記録は「だれか分からない」に戻す
+      for (const e of s.events.filter((x) => x.childId === k.id)) s = assignChild(s, e.id, null, { sameVoice: false });
+      saveMuseum(s.museum); saveEvents(s.events); saveChildren(removeChild(loadChildren(), k.id));
+      renderKidsList(); render();
     };
-    no.onclick = () => { savePending(loadPending().filter((x) => x.id !== p.id)); render(); };
-    row.append(yes, no); d.append(row); box.append(d);
+    const f = el('div', 'f'); f.append(bd, age, del);
+    row.append(dot, name, f); box.append(row);
   }
 }
 
-function renderMuseum() {
-  const list = loadMuseum();
-  $('count').textContent = list.length;
-  const box = $('list'); box.replaceChildren();
-  if (!list.length) { box.append(el('div', 'empty', 'まだ展示はありません。子ども部屋で言い間違いが見つかると、ここに届きます。')); return; }
-  for (const e of [...list].reverse()) {
-    const d = el('div', 'entry');
-    d.append(wordLine(e.wrong, e.right));
-    const meta = el('div', 'muted', `${e.count}回　はじめて: ${e.firstDate ?? '—'}`);
-    if (e.graduatedDate) meta.append(' ', el('span', 'tag', `卒業 ${e.graduatedDate}`));
-    d.append(meta);
-    const row = el('div', 'row'); row.style.marginTop = '8px';
-    const clip = e.clipIds?.[e.clipIds.length - 1];
-    if (clip) row.append(playBtn(clip));
-    if (!e.graduatedDate) {
-      const g = el('button', 'ghost', '正しく言えた（卒業）');
-      g.onclick = () => { saveMuseum(graduate(loadMuseum(), e.wrong, today())); render(); };
-      row.append(g);
+$('kidAdd').onclick = () => {
+  const before = loadChildren(), next = addChild(before, { name: $('kidName').value, birthday: $('kidBirth').value || null });
+  if (next.length === before.length) { $('kidMsg').textContent = before.length >= CHILD_LIMIT ? `${CHILD_LIMIT}人までです` : '名前を入れてください'; return; }
+  saveChildren(next); $('kidName').value = ''; $('kidBirth').value = ''; $('kidMsg').textContent = ''; renderKidsList(); render();
+};
+$('kidsClose').onclick = () => $('kids').close();
+
+let whoEvent = null;
+function openWho(eventId) {
+  const ev = loadEvents().find((e) => e.id === eventId); if (!ev) return;
+  whoEvent = eventId; $('whoWord').textContent = `「${ev.wrong}」を言ったのは？`;
+  const box = $('whoList'); box.replaceChildren();
+  for (const k of loadChildren()) { const b = el('button', 'ghost'); b.type = 'button'; b.append(kidTag(k)); b.onclick = () => pick(k.id); box.append(b); }
+  const none = el('button', 'quiet', 'わからない'); none.type = 'button'; none.onclick = () => pick(null); box.append(none);
+  $('who').showModal();
+}
+function pick(childId) {
+  const s = assignChild({ museum: loadMuseum(), events: loadEvents() }, whoEvent, childId);
+  saveMuseum(s.museum); saveEvents(s.events); $('who').close(); render();
+}
+$('whoClose').onclick = () => $('who').close();
+
+// ---- メイン: 新着が届く。時系列（新しい順）に並べるだけ ----
+function render() {
+  const museum = loadMuseum(), events = loadEvents(), kids = loadChildren();
+  renderKids(events);
+  const byId = new Map(museum.map((e) => [e.id, e]));
+  const known = (ev) => kids.some((k) => k.id === ev.childId);
+  const list = [...events]
+    .filter((e) => byId.has(e.entryId) && (filter === 'all' || (filter === '?' ? !known(e) : e.childId === filter)))
+    .sort((a, b) => Date.parse(b.at) - Date.parse(a.at));
+  $('emptyBox').hidden = events.length > 0;
+  $('summary').textContent = list.length ? `${new Set(list.map((e) => e.entryId)).size}種類・あわせて${list.length}回` : events.length ? '該当する記録はありません' : '';
+  const box = $('timeline'); box.replaceChildren();
+  let day = null;
+  for (const ev of list) {
+    const d = ev.at.slice(0, 10), entry = byId.get(ev.entryId);
+    if (d !== day) {
+      day = d;
+      const rel = dayLabel(d), h = el('div', 'day', rel ?? `${md(d)}（${wk(d)}）`);
+      if (rel) h.append(el('small', '', `${md(d)}（${wk(d)}）`));
+      box.append(h);
     }
-    d.append(row); box.append(d);
+    const row = el('div', 'item' + (entry.graduatedDate ? ' done' : '')); // ボタンの中にボタンを入れないよう div にする
+    row.tabIndex = 0; row.setAttribute('role', 'button');
+    row.append(el('span', 'tm', hm(ev.at)), el('span', 'wd', ev.wrong));
+    if (ev.quote) row.append(el('span', 'qt', `「${ev.quote}」`));
+    const rt = el('span', 'rt');
+    const n = nthSighting(events, ev);
+    rt.append(el('span', 'tag', entry.graduatedDate ? '卒業' : `${n}回目`));
+    if (kids.length) {
+      const k = kids.find((c) => c.id === ev.childId);
+      const wb = el('button', k ? 'ghost mini' : 'mini coral', ''); wb.type = 'button';
+      if (k) wb.append(kidTag(k)); else wb.textContent = 'だれ?';
+      wb.onclick = (e) => { e.stopPropagation(); openWho(ev.id); };
+      rt.append(wb);
+    }
+    if (ev.clipId) rt.append(playBtn(ev.clipId));
+    row.append(rt);
+    row.onclick = () => openSheet(entry.id);
+    row.onkeydown = (e) => { if ((e.key === 'Enter' || e.key === ' ') && e.target === row) { e.preventDefault(); openSheet(entry.id); } };
+    box.append(row);
   }
 }
 
-function render() { renderPending(); renderMuseum(); }
+// ---- 詳細（頻度・記録・写真・訂正・卒業の日）----
+let cur = null, newPhoto = null, clearPhoto = false;
 
-$('seed').onclick = () => {
-  let m = loadMuseum();
-  m = registerEntry(m, { wrong: 'とうもころし', right: 'とうもろこし', note: '' }, { date: '2026-11-18' });
-  m = registerEntry(m, { wrong: 'とうもころし', right: 'とうもろこし', note: '' }, { date: '2026-11-21' });
-  m = registerEntry(m, { wrong: 'えべれーたー', right: 'エレベーター', note: '' }, { date: '2026-11-10' });
-  m = graduate(m, 'えべれーたー', '2026-11-20');
-  saveMuseum(m); render();
+function showPhoto(url) {
+  $('shPhoto').replaceChildren(url ? Object.assign(el('img'), { src: url, alt: '' }) : el('span', '', '写真はまだありません'));
+  $('photoClear').hidden = !url;
+}
+
+function fillFreq(entryId) {
+  const events = loadEvents();
+  const f = frequencyOf(events, entryId, nowLocal());
+  const rows = [
+    ['通算', `${f.total}回`],
+    ['はじめて', f.firstAt ? `${md(f.firstAt.slice(0, 10))} ${hm(f.firstAt)}` : '—'],
+    ['最後', f.lastAt ? `${md(f.lastAt.slice(0, 10))} ${hm(f.lastAt)}` : '—'],
+    ['直近7日', `${f.last7}回`],
+    ['1週間あたり', `${f.perWeek}回`],
+    ['日別', f.days.map((x) => `${md(x.date)}（${x.count}回）`).join('　') || '—'],
+  ];
+  $('shFreq').replaceChildren(...rows.flatMap(([k, v]) => [el('dt', '', k), el('dd', '', v)]));
+  const log = $('shLog'); log.replaceChildren();
+  for (const ev of events.filter((e) => e.entryId === entryId).sort((a, b) => Date.parse(b.at) - Date.parse(a.at))) {
+    const li = el('li');
+    li.append(el('span', '', `${md(ev.at.slice(0, 10))} ${hm(ev.at)}${ev.quote ? `　「${ev.quote}」` : ''}`));
+    if (ev.clipId) li.append(playBtn(ev.clipId));
+    log.append(li);
+  }
+}
+
+async function openSheet(id) {
+  const e = loadMuseum().find((x) => x.id === id);
+  if (!e) return;
+  cur = e; newPhoto = null; clearPhoto = false;
+  $('shWord').textContent = e.wrong;
+  $('shDone').hidden = !e.graduatedDate;
+  const k = childOf(e.childId), age = k ? ageText(k.birthday) : '';
+  $('shWho').textContent = k ? `${k.name}${age ? `（${age}）` : ''}` : '';
+  fillFreq(id);
+  $('shRight').value = e.right ?? '';
+  $('shGrad').value = e.graduatedDate ?? '';
+  $('photoInput').value = '';
+  showPhoto(e.photoId ? keepUrl(await imageUrl(e.photoId)) : null);
+  $('sheet').showModal();
+}
+
+$('photoInput').onchange = async (ev) => {
+  const f = ev.target.files?.[0]; if (!f) return;
+  try { newPhoto = await resizeImage(f); clearPhoto = false; showPhoto(keepUrl(URL.createObjectURL(newPhoto))); }
+  catch { $('shPhoto').replaceChildren(el('span', '', 'この写真は読み込めませんでした')); }
+};
+$('photoClear').onclick = () => { newPhoto = null; clearPhoto = true; showPhoto(null); };
+$('gradToday').onclick = () => { $('shGrad').value = today(); };
+$('gradClear').onclick = () => { $('shGrad').value = ''; };
+$('shClose').onclick = () => $('sheet').close();
+$('sheet').addEventListener('click', (ev) => { if (ev.target === $('sheet')) $('sheet').close(); }); // 外側をタップで閉じる
+
+$('shSave').onclick = async () => {
+  if (!cur) return;
+  const patch = { right: $('shRight').value, graduatedDate: $('shGrad').value || null };
+  if (newPhoto) { const pid = `ph-${Date.now()}`; if (await putClip(pid, newPhoto)) patch.photoId = pid; }
+  else if (clearPhoto) patch.photoId = null;
+  saveMuseum(updateEntry(loadMuseum(), cur.id, patch));
+  $('sheet').close(); render();
 };
 
-window.addEventListener('storage', render); // 子ども部屋の画面で見つかったら、すぐ反映
+let armed = false;
+$('shDelete').onclick = () => {
+  if (!armed) { armed = true; $('shDelete').textContent = 'もう一度おすと、外します'; return; }
+  saveMuseum(removeEntry(loadMuseum(), cur.id));
+  saveEvents(loadEvents().filter((e) => e.entryId !== cur.id)); // その言葉の記録もいっしょに消える
+  armed = false; $('sheet').close(); render();
+};
+$('sheet').addEventListener('close', () => { armed = false; $('shDelete').textContent = '図書館から外す'; });
+
+// デモ用の例（過去の日付で記録を積む）
+$('seed').onclick = () => {
+  let kids = loadChildren();
+  if (!kids.length) { // 例として、子どもを2人登録する
+    kids = addChild(addChild(kids, { name: 'ゆい', birthday: '2023-07-15' }), { name: 'そら', birthday: '2021-02-01' });
+    saveChildren(kids);
+  }
+  const [yui, sora] = [kids[0]?.id ?? null, kids[1]?.id ?? kids[0]?.id ?? null];
+  let s = { museum: loadMuseum(), events: loadEvents() };
+  const T = { wrong: 'とうもころし', right: 'とうもろこし' }, E = { wrong: 'えべれーたー', right: 'エレベーター' }, R = { wrong: 'てびり', right: 'テレビ' };
+  const at = (d, t) => `${d}T${t}`;
+  for (const [c, a, q, who] of [
+    [E, at('2026-11-08', '17:40:00'), 'えべれーたー のる', sora],
+    [E, at('2026-11-12', '08:15:00'), 'えべれーたー きた', sora],
+    [T, at('2026-11-18', '18:30:00'), 'とうもころし たべたい', yui],
+    [R, at('2026-11-21', '07:20:00'), 'てびり つけて', yui],
+    [T, at('2026-11-21', '18:45:00'), 'とうもころし おいしい', yui],
+    [R, at('2026-11-22', '16:05:00'), 'てびり みたいなー', null], // 例: だれが言ったか未選択
+  ]) s = recordSighting(s, { ...c, childId: who }, { at: a, quote: q });
+  s.museum = graduate(s.museum, 'えべれーたー', '2026-11-20', sora);
+  saveMuseum(s.museum); saveEvents(s.events); render();
+};
+
+window.addEventListener('storage', render); // 子ども部屋で見つかったら、すぐ反映
 render();
 </script>
 </body>

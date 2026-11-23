@@ -1,7 +1,7 @@
 /* =========================================================
    api/analyze.js — Vercel Serverless Function & Local Analyzer
    子ども部屋の発話（テキスト＋直近バッファ）を解析し、
-   話者分離・ケンカ発端と伝え方アドバイス・言い間違い博物館・
+   話者分離・ケンカ発端と伝え方アドバイス・言い間違い図書館・
    ほっこり/持ち物発見を JSON で返す。
    GEMINI_API_KEY が未設定または失敗時は内蔵エンジンへ自動フォールバック。
    ========================================================= */
@@ -143,7 +143,7 @@ export function analyzeWithRules({
   ].join(' ');
   const topic = pickTopicNoun(combinedHistory);
 
-  // 1. 卒業チェック（現在博物館にある言い間違いの「正しい大人語」を言えたら卒業！）
+  // 1. 卒業チェック（現在図書館にある言い間違いの「正しい大人語」を言えたら卒業！）
   const activeSet = new Set(activeMuseumWords);
   for (const entry of CHILD_WORDS_DICT) {
     if (activeSet.has(entry.child) && raw.includes(entry.adult)) {
@@ -274,7 +274,7 @@ export function analyzeWithRules({
           emoji: '🏛️',
           level: 'happy',
           label: `かわいい言い間違い「${entry.child}」を発見！`,
-          detail: `言い間違い博物館に展示候補として届きました（写真添付もできます）`,
+          detail: `言い間違い図書館に展示候補として届きました（写真添付もできます）`,
         },
         museumItem: {
           kind: 'mispronunciation',
@@ -377,7 +377,7 @@ export function analyzeWithRules({
         emoji: '🌱',
         level: 'happy',
         label: `新しいことば「${spottedNewWords[0]}」を使えました！`,
-        detail: '言い間違い博物館「増えた言葉コーナー」に登録できます',
+        detail: '言い間違い図書館「増えた言葉コーナー」に登録できます',
       },
       museumItem: {
         kind: 'new_word',
@@ -418,12 +418,12 @@ async function analyzeWithGemini({ text, ageStage, history, activeMuseumWords })
 
   try {
     const prompt = `
-あなたは共働きのお母さんを助ける家庭内見守りAI「言い間違い博物館＆ママコーチ」です。
+あなたは共働きのお母さんを助ける家庭内見守りAI「言い間違い図書館＆ママコーチ」です。
 子ども部屋で録音された直近の発話と今回の発話を解析し、必ず有効なJSONのみを返してください。
 
 条件:
 - 年齢モード: ${ageStage === 'elementary' ? '小学生（7〜12歳: 論理・ルール・言った言わない重視）' : '幼稚園児（3〜6歳: 気持ち代弁・やさしい翻訳・言い間違い重視）'}
-- 現在博物館で現役の言い間違い: ${JSON.stringify(activeMuseumWords)}
+- 現在図書館で現役の言い間違い: ${JSON.stringify(activeMuseumWords)}
 - 直近の3分バッファ履歴: ${JSON.stringify(history.slice(-6))}
 - 今回の発話テキスト: ${JSON.stringify(text)}
 
