@@ -59,14 +59,19 @@ export default async function handler(req, res) {
     try { words = JSON.parse(decodeURIComponent(String(req.headers['x-hint-words'] || '%5B%5D'))); } catch { words = []; }
     const prompt = hintPrompt(Array.isArray(words) ? words : []);
 
-    // 受け付けられない組み合わせ（400/422）なら、ヒント → 話者分離 の順に外して試す
-    const tries = [{ diarize: true, prompt }, ...(prompt ? [{ diarize: true, prompt: '' }] : []), { diarize: false, prompt: '' }];
-    let resp, used;
-    for (const t of tries) {
-      used = t;
-      resp = await post(key, audio, type, t.diarize, t.prompt);
-      if (resp.status !== 400 && resp.status !== 422) break;
+    // 受け付けられないとき（400/422）は、Aqua のエラーが指す項目（param）だけを外して送り直す。
+    // ヒント（prompt）→ 話者分離（diarize・response_format）の順。音声そのものが読めないときは、送り直さずに止める
+    let used = { diarize: true, prompt };
+    let resp = await post(key, audio, type, used.diarize, used.prompt);
+    for (let i = 0; i < 2 && (resp.status === 400 || resp.status === 422); i++) {
+      let param = '';
+      try { param = String((await resp.clone().json())?.error?.param ?? ''); } catch { /* 形が違うときは、音声の問題とみなす */ }
+      if (param === 'prompt' && used.prompt) used = { ...used, prompt: '' };
+      else if ((param === 'diarize' || param === 'response_format') && used.diarize) used = { ...used, diarize: false };
+      else break;
+      resp = await post(key, audio, type, used.diarize, used.prompt);
     }
+    if (resp.status === 400 || resp.status === 422) return json(res, 422, { ok: false, error: '音声を読めませんでした（短すぎる・形式が違うなど）' });
     if (!resp.ok) return json(res, 502, { ok: false, error: `Aqua API ${resp.status}` });
     const out = normalizeTranscript(await resp.json());
     return json(res, 200, { ok: true, diarized: used.diarize, hinted: Boolean(used.prompt), ...out });
