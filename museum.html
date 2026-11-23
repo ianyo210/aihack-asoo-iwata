@@ -15,6 +15,7 @@
     <svg class="env" viewBox="0 0 64 46"><rect x="2" y="3" width="60" height="40" rx="6" fill="#FFF8E7" stroke="#8B6E4E" stroke-width="2.6"/><path d="M4 7 L32 27 L60 7" fill="none" stroke="#8B6E4E" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M32 33 C27 28 25 25 28 23 C30 22 32 24 32 25 C32 24 34 22 36 23 C39 25 37 28 32 33 Z" fill="#E28C8C" stroke="#8B6E4E" stroke-width="1.4"/></svg>
   </div>
   <p class="intro-tx">いいま<span class="mirror">ち</span>がい<br>と<span class="tilt">し</span>ょかん</p>
+  <p class="intro-mail">おてがみが とどいたよ</p>
 </div>
 
 <main class="wrap">
@@ -445,12 +446,22 @@ $('seed').onclick = () => {
 window.addEventListener('storage', render); // 子ども部屋で見つかったら、すぐ反映
 
 // 起動時: ことば鳥が飛んでくる（新着があれば、手紙をくわえて）。押すと飛ばせる
+// 手紙のバナーに、鳥が飛んでくる（起動時の演出が終わってから。新しく届いたときも）
+let introDone = false, shownUnread = -1;
+function arrive() {
+  const m = $('mail'); if (m.hidden) return;
+  m.classList.remove('arrive'); void m.offsetWidth; m.classList.add('arrive');
+}
+window.addEventListener('storage', () => { const n = unreadNow().length; if (introDone && n > shownUnread) arrive(); shownUnread = n; });
+
 (function intro() {
-  const box = $('intro'); if (!box) return;
-  if (matchMedia('(prefers-reduced-motion: reduce)').matches) { box.remove(); return; }
+  const box = $('intro');
+  const finish = () => { introDone = true; shownUnread = unreadNow().length; arrive(); };
+  if (!box) { finish(); return; }
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) { box.remove(); finish(); return; }
   if (unreadNow().length) box.classList.add('with-mail');
   let gone = false;
-  const done = () => { if (gone) return; gone = true; box.classList.add('out'); setTimeout(() => box.remove(), 450); };
+  const done = () => { if (gone) return; gone = true; box.classList.add('out'); setTimeout(() => { box.remove(); finish(); }, 450); };
   box.addEventListener('click', done);
   setTimeout(done, 2300);
 })();

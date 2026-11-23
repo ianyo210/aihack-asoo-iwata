@@ -3,7 +3,7 @@
 // segments は [{ speaker: 'spk_0', text, start, end }]。話者分離が使えないときは、通常の文字起こしに切り替える。
 // 整形済みの dictations は使わない（言い間違いを正しい言葉に直してしまう恐れがあるため）。
 // 鍵は環境変数 AQUA_API_KEY。コードにもログにも書かない。
-import { normalizeTranscript } from '../lib/mistakes.js';
+import { normalizeTranscript, hintPrompt } from '../lib/mistakes.js';
 
 const MAX_BYTES = 4 * 1024 * 1024; // Vercel の関数の本文上限（約4.5MB）に収める
 const ENDPOINT = 'https://api.aquavoice.com/v1/audio/transcriptions';
@@ -27,11 +27,13 @@ async function readAudio(req) {
   return Buffer.concat(chunks);
 }
 
-function post(key, audio, type, diarize) {
+function post(key, audio, type, diarize, prompt) {
   const form = new FormData();
   form.append('file', new Blob([audio], { type }), 'clip.' + (type.includes('mp4') ? 'm4a' : type.includes('ogg') ? 'ogg' : type.includes('wav') ? 'wav' : 'webm'));
   form.append('model', 'avalon-2');
   form.append('language', 'ja');
+  // ヒント: この家の子がよく言う言葉。知らない言い間違いを実在の言葉に寄せる（さんとさん→ほんとさ）のを防ぐ
+  if (prompt) form.append('prompt', prompt);
   if (diarize) {
     form.append('diarize', 'true');
     form.append('response_format', 'diarized_json');
@@ -52,15 +54,21 @@ export default async function handler(req, res) {
     if (audio.length > MAX_BYTES) return json(res, 413, { ok: false, error: '音声が大きすぎます（4MBまで）' });
     const type = String(req.headers['x-audio-type'] || 'audio/webm');
 
-    let diarized = true;
-    let resp = await post(key, audio, type, true);
-    if (resp.status === 400 || resp.status === 422) { // 話者分離を受け付けない形式のとき
-      diarized = false;
-      resp = await post(key, audio, type, false);
+    let words = [];
+    try { words = JSON.parse(decodeURIComponent(String(req.headers['x-hint-words'] || '%5B%5D'))); } catch { words = []; }
+    const prompt = hintPrompt(Array.isArray(words) ? words : []);
+
+    // 受け付けられない組み合わせ（400/422）なら、ヒント → 話者分離 の順に外して試す
+    const tries = [{ diarize: true, prompt }, ...(prompt ? [{ diarize: true, prompt: '' }] : []), { diarize: false, prompt: '' }];
+    let resp, used;
+    for (const t of tries) {
+      used = t;
+      resp = await post(key, audio, type, t.diarize, t.prompt);
+      if (resp.status !== 400 && resp.status !== 422) break;
     }
     if (!resp.ok) return json(res, 502, { ok: false, error: `Aqua API ${resp.status}` });
     const out = normalizeTranscript(await resp.json());
-    return json(res, 200, { ok: true, diarized, ...out });
+    return json(res, 200, { ok: true, diarized: used.diarize, hinted: Boolean(used.prompt), ...out });
   } catch (e) {
     return json(res, 500, { ok: false, error: e?.message || 'transcribe failed' });
   }

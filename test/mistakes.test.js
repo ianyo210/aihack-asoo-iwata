@@ -5,7 +5,7 @@ import {
   toHiragana, normalizeTranscript, detectByRules, sanitizeCandidates, detectMistakes,
   registerEntry, graduate, findGraduationHints, updateEntry, removeEntry,
   recordSighting, frequencyOf, nthSighting,
-  attributeSpeakers, addChild, updateChild, removeChild, ageText, defaultChildId, assignChild, CHILD_LIMIT, unreadSince,
+  attributeSpeakers, addChild, updateChild, removeChild, ageText, defaultChildId, assignChild, CHILD_LIMIT, unreadSince, familyDictionary, hintPrompt,
 } from '../lib/mistakes.js';
 import { detectByGemini } from '../lib/gemini.js';
 import { detectByOpenRouter } from '../lib/openrouter.js';
@@ -265,6 +265,37 @@ test('unreadSince: 前回ひらいたあとに届いたものだけ、古い順'
   assert.deepEqual(unreadSince(ev, '2026-11-23T12:30:00').map((e) => e.id), []); // ちょうどの時刻は既読
   assert.deepEqual(unreadSince(ev, null).map((e) => e.id), ['a', 'b', 'c']);     // はじめては全部
   assert.deepEqual(unreadSince([], '2026-11-22T20:00:00'), []);
+});
+
+test('familyDictionary: 図書館の言葉を辞書に足す（卒業した言葉・重複は除く）', () => {
+  const museum = [
+    { wrong: 'さんとさん', right: 'サンタさん' },
+    { wrong: 'てびり', right: 'テレビ' },              // 辞書と重複
+    { wrong: 'えべれーたー', right: 'エレベーター', graduatedDate: '2026-11-20' }, // 卒業は除く
+    { wrong: 'ぶーぶ', right: '' },                    // 訂正なしでも入る
+  ];
+  const d = familyDictionary(museum);
+  assert.ok(d.some((x) => x.wrong === 'さんとさん'));
+  assert.equal(d.filter((x) => x.wrong === 'てびり').length, 1);
+  assert.equal(familyDictionary([{ wrong: 'ぴよぴよ', right: 'ひよこ', graduatedDate: '2026-11-20' }]).some((x) => x.wrong === 'ぴよぴよ'), false); // 卒業した言葉は足さない
+  assert.ok(d.some((x) => x.wrong === 'ぶーぶ'));
+});
+
+test('本物の声の結果を再現: ヒントで「さんとさん」と書けたら、図書館の言葉で拾える', async () => {
+  const museum = [{ wrong: 'さんとさん', right: 'サンタさん' }];
+  const noLlm = await detectMistakes('さんとさん', { dictionary: familyDictionary(museum) });
+  assert.deepEqual(noLlm.candidates.map((c) => c.wrong + '→' + c.right), ['さんとさん→サンタさん']);
+  // AI が「言い間違いではない」と答えても（実測で Gemini は空だった）、図書館の言葉で拾う
+  const aiEmpty = await detectMistakes('さんとさん', { llm: async () => [], dictionary: familyDictionary(museum) });
+  assert.equal(aiEmpty.candidates[0].right, 'サンタさん');
+  // 図書館に無ければ拾えない（＝1回目は、おうちのひとが登録する）
+  assert.deepEqual((await detectMistakes('ほんとさ', { dictionary: familyDictionary(museum) })).candidates, []);
+});
+
+test('hintPrompt: Aqua に渡すヒントの文', () => {
+  assert.equal(hintPrompt(['さんとさん', 'てびり', 'さんとさん', '']), 'この子がよく言う言葉: さんとさん、てびり');
+  assert.equal(hintPrompt([]), '');
+  assert.ok(hintPrompt(Array.from({ length: 100 }, (_, i) => `ことば${i}`)).length <= 400);
 });
 
 // ---- Gemini（本物は呼ばない。fetch を差し替える）----

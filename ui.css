@@ -185,8 +185,9 @@ dl.freq dd{margin:0;font-weight:700}
 .mailtx b{font:400 18px/1.4 var(--font-head)}
 .mailtx small{font-size:13px;color:var(--muted)}
 @media (prefers-reduced-motion:no-preference){
-  .mail:not([hidden]) .carrier{animation:flyin 1.1s cubic-bezier(.2,.8,.3,1) both, flap 1.4s ease-in-out 1.1s infinite}
-  .mail:not([hidden]) .env{animation:sway 1.4s ease-in-out 1.1s infinite}
+  /* 起動時の演出が終わってから、.arrive を付けて飛んでこさせる（演出の裏で終わらないように） */
+  .mail.arrive .carrier{animation:flyin 1.1s cubic-bezier(.2,.8,.3,1) both, flap 1.4s ease-in-out 1.1s infinite}
+  .mail.arrive .env{animation:sway 1.4s ease-in-out 1.1s infinite}
   @keyframes flyin{from{transform:translate(110vw,-30px) rotate(-8deg)}70%{transform:translate(-6px,4px) rotate(3deg)}to{transform:none}}
   @keyframes flap{50%{transform:translateY(-4px)}}
   @keyframes sway{50%{transform:rotate(-4deg) translateY(2px)}}
@@ -220,6 +221,8 @@ dl.freq dd{margin:0;font-weight:700}
 .intro-fly img{width:100%;height:auto;display:block}
 .intro .env{position:absolute;width:30%;right:-4%;top:52%;transform:rotate(-12deg);display:none}
 .intro.with-mail .env{display:block}
+.intro-mail{display:none;margin:4px 0 0;font:400 20px/1.4 var(--font-head);color:var(--rose)}
+.intro.with-mail .intro-mail{display:block}
 .intro-tx{margin:0;font:400 32px/1.25 var(--font-head);text-align:center;color:var(--leaf)}
 .intro-tx .mirror{display:inline-block;transform:scaleX(-1);color:var(--sky)}
 .intro-tx .tilt{display:inline-block;transform:rotate(-9deg);color:var(--rose)}

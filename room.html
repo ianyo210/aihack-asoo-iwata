@@ -28,7 +28,11 @@
 </main>
 
 <script type="module">
-import { recordCandidates, putClip } from '/lib/store.js';
+import { recordCandidates, putClip, loadMuseum } from '/lib/store.js';
+import { familyDictionary } from '/lib/mistakes.js';
+// この家の子がよく言う言葉（図書館に入った言葉＋既知の言い間違い）。Aqua へのヒントと、判定の辞書に使う
+const familyWords = () => familyDictionary(loadMuseum()).map((d) => d.wrong);
+const museumLite = () => loadMuseum().map(({ id, wrong, right, graduatedDate }) => ({ id, wrong, right, graduatedDate }));
 const $ = (id) => document.getElementById(id);
 const say = (el, t) => { el.textContent = t; };
 
@@ -59,7 +63,7 @@ function show(listening) {
 // 文字 → 言い間違いの候補 → お母さんの画面へ（子どもには結果を見せない）
 async function deliver(text, clipId, segments = []) {
   try {
-    const r = await fetch('/api/detect', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ text, segments }) }).then((x) => x.json());
+    const r = await fetch('/api/detect', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ text, segments, museum: museumLite() }) }).then((x) => x.json());
     if (!r.ok) throw new Error(r.error || '失敗');
     recordCandidates(r.candidates, { clipId }); // お母さんの確認なしで、図書館と記録に入る
     say($('note'), r.candidates.length ? 'おうちのひとに とどけたよ' : '');
@@ -70,7 +74,7 @@ async function onClip(blob, type) {
   const clipId = `c-${Date.now()}`;
   await putClip(clipId, blob);
   try {
-    const resp = await fetch('/api/transcribe', { method: 'POST', headers: { 'content-type': 'application/octet-stream', 'x-audio-type': type || 'audio/webm' }, body: blob });
+    const resp = await fetch('/api/transcribe', { method: 'POST', headers: { 'content-type': 'application/octet-stream', 'x-audio-type': type || 'audio/webm', 'x-hint-words': encodeURIComponent(JSON.stringify(familyWords())) }, body: blob });
     const r = await resp.json();
     if (!resp.ok || !r.ok) throw new Error(r.error || `エラー ${resp.status}`);
     if (r.text) await deliver(r.text, clipId, r.segments);

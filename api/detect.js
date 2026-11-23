@@ -1,6 +1,6 @@
 // POST /api/detect  { text, museum? }  →  { ok, source, candidates, graduations }
 // 言い間違いの候補を返す。Gemini が使えなくても辞書ルールで必ず返事をする。
-import { detectMistakes, findGraduationHints, attributeSpeakers } from '../lib/mistakes.js';
+import { detectMistakes, findGraduationHints, attributeSpeakers, familyDictionary } from '../lib/mistakes.js';
 import { detectByGemini } from '../lib/gemini.js';
 import { detectByOpenRouter } from '../lib/openrouter.js';
 
@@ -35,7 +35,9 @@ export default async function handler(req, res) {
     const segs = Array.isArray(segments) ? segments.map((s) => ({ speaker: s?.speaker ?? null, text: String(s?.text ?? '') })).filter((s) => s.text) : [];
     const body = String(text || segs.map((s) => s.text).join('\n')).slice(0, 4000);
     const llm = pickLlm();
-    const { source, candidates, aiError } = await detectMistakes(body, { llm: llm?.run });
+    // 図書館に入った言葉も辞書に足す（AI が言い間違いと気づかない「さんとさん」なども拾える）
+    const dictionary = familyDictionary(Array.isArray(museum) ? museum.slice(0, 300) : []);
+    const { source, candidates, aiError } = await detectMistakes(body, { llm: llm?.run, dictionary });
     if (aiError) console.warn(`detect: ${llm.name} 失敗 → ルールに切替:`, aiError);
     const graduations = findGraduationHints(Array.isArray(museum) ? museum : [], body);
     // 誰が言ったか（話者ラベル）を、それぞれの候補に付ける
