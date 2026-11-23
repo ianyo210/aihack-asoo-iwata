@@ -1,9 +1,9 @@
 {
-  "name": "kotoba-museum-mimamori",
+  "name": "iimachigai-library",
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "子ども部屋の声をAqua VoiceとAIで見守り、ケンカの発端・伝え方アドバイス・言い間違い図書館をお母さんのスマホへ届けるPWA",
+  "description": "子どもの言い間違いを、声のまま自動で集めて残す図書館。Aqua Voice（素の文字起こし＋話者分離）とAIで見つけ、音声クリップ付きで時系列に並べるPWA",
   "scripts": {
     "start": "node server.mjs",
     "dev": "node server.mjs"
