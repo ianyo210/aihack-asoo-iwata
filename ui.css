@@ -230,6 +230,7 @@ dl.freq dd{margin:0;font-weight:700}
   .intro-fly{animation:introFly 1.5s cubic-bezier(.22,.8,.3,1) both}
   .intro-fly img{animation:flapIntro .32s ease-in-out infinite alternate}
   .intro-tx{animation:fadeUp .6s ease-out 1.15s both}
+  .intro-mail{animation:fadeUp .6s ease-out 1.45s both} /* 鳥が着いてから、文字が出る */
   @keyframes introFly{0%{transform:translate(70vw,-55vh) rotate(-18deg) scale(.55)}55%{transform:translate(-6vw,3vh) rotate(7deg) scale(1.04)}78%{transform:translate(2vw,-2vh) rotate(-3deg)}100%{transform:none}}
   @keyframes flapIntro{to{transform:scaleY(.93) translateY(2px)}}
   @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}

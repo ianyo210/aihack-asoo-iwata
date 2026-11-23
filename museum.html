@@ -533,7 +533,7 @@ window.addEventListener('storage', () => { const n = unreadNow().length; if (int
   let gone = false;
   const done = () => { if (gone) return; gone = true; box.classList.add('out'); setTimeout(() => { box.remove(); finish(); }, 450); };
   box.addEventListener('click', done);
-  setTimeout(done, 2300);
+  setTimeout(done, box.classList.contains('with-mail') ? 2900 : 2300); // 手紙のときは「とどいたよ」を読める長さに
 })();
 
 render();
