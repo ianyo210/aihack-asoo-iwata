@@ -1,0 +1,14 @@
+{
+  "name": "kotoba-museum-mimamori",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "子ども部屋の声をAqua VoiceとAIで見守り、ケンカの発端・伝え方アドバイス・ことばの博物館をお母さんのスマホへ届けるPWA",
+  "scripts": {
+    "start": "node server.mjs",
+    "dev": "node server.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

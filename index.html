@@ -1,0 +1,2262 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <meta name="theme-color" content="#FF8C7A" />
+  <title>ことばの博物館 ＆ みまもりママコーチ</title>
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700;800&family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #FFF9F2;
+      --bg-dot: #F5E6D3;
+      --surface: #FFFFFF;
+      --surface-warm: #FFFDF9;
+      --ink: #4A352A;
+      --muted: #8C756A;
+      --line: #F0DFCF;
+      --coral: #FF8C7A;
+      --coral-soft: #FFF0EC;
+      --mint: #34B38A;
+      --mint-soft: #E9FBF3;
+      --honey: #F59E0B;
+      --honey-soft: #FFF7DE;
+      --sky: #5B9BD5;
+      --sky-soft: #EDF5FF;
+      --sakura: #F472B6;
+      --sakura-soft: #FDF2F8;
+      --danger: #E11D48;
+      --danger-soft: #FFF1F2;
+      --shadow: 0 10px 28px -12px rgba(74, 53, 42, 0.16);
+      --shadow-sm: 0 4px 12px -4px rgba(74, 53, 42, 0.1);
+      --radius: 22px;
+      --font: "Zen Maru Gothic", "M PLUS Rounded 1c", "Hiragino Maru Gothic ProN", "Yu Gothic", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: var(--font);
+      color: var(--ink);
+      background-color: var(--bg);
+      background-image: radial-gradient(var(--bg-dot) 1.5px, transparent 1.5px);
+      background-size: 22px 22px;
+      line-height: 1.55;
+    }
+
+    button, input, textarea {
+      font-family: inherit;
+    }
+
+    /* ---------- Top Bar ---------- */
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      background: rgba(255, 253, 249, 0.92);
+      backdrop-filter: blur(10px);
+      border-bottom: 2px solid var(--line);
+      padding: 10px 18px;
+    }
+
+    .topbar-inner {
+      max-width: 1320px;
+      margin: 0 auto;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 14px;
+      box-shadow: var(--shadow-sm);
+      flex-shrink: 0;
+    }
+
+    .brand h1 {
+      font-size: 1.05rem;
+      font-weight: 900;
+      margin: 0;
+      letter-spacing: -0.01em;
+    }
+
+    .brand .sub {
+      font-size: 0.72rem;
+      color: var(--muted);
+      margin: 0;
+    }
+
+    .controls-group {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .pill-switch {
+      display: inline-flex;
+      background: #F6EBDD;
+      padding: 3px;
+      border-radius: 999px;
+      gap: 2px;
+    }
+
+    .pill-switch button {
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      font-size: 0.76rem;
+      font-weight: 700;
+      padding: 6px 11px;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: all 0.18s ease;
+    }
+
+    .pill-switch button.active {
+      background: var(--surface);
+      color: var(--ink);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .icon-btn {
+      border: 1.5px solid var(--line);
+      background: var(--surface);
+      color: var(--ink);
+      border-radius: 999px;
+      padding: 6px 12px;
+      font-size: 0.76rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.12s ease, background 0.15s ease;
+    }
+
+    .icon-btn:hover { background: var(--coral-soft); }
+    .icon-btn:active { transform: scale(0.97); }
+
+    /* ---------- Main Workspace ---------- */
+    .workspace {
+      max-width: 1320px;
+      margin: 16px auto 36px;
+      padding: 0 16px;
+      display: grid;
+      grid-template-columns: 1.05fr 0.95fr;
+      gap: 22px;
+      align-items: start;
+    }
+
+    .workspace.mode-room {
+      grid-template-columns: minmax(0, 760px);
+      justify-content: center;
+    }
+
+    .workspace.mode-mom {
+      grid-template-columns: minmax(0, 440px);
+      justify-content: center;
+    }
+
+    .workspace.mode-room .mom-pane { display: none; }
+    .workspace.mode-mom .room-pane { display: none; }
+
+    /* ---------- Cards & Room Pane ---------- */
+    .panel {
+      background: var(--surface);
+      border: 2px solid var(--line);
+      border-radius: var(--radius);
+      padding: 18px;
+      box-shadow: var(--shadow);
+    }
+
+    .pane-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .pane-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 1.05rem;
+      font-weight: 900;
+      margin: 0;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 999px;
+    }
+
+    .badge-mint { background: var(--mint-soft); color: #167A5B; }
+    .badge-coral { background: var(--coral-soft); color: #C2412C; }
+    .badge-honey { background: var(--honey-soft); color: #9A5B00; }
+    .badge-sakura { background: var(--sakura-soft); color: #BE185D; }
+    .badge-sky { background: var(--sky-soft); color: #2B6CB0; }
+
+    /* ---------- VAD Always-on Sensor ---------- */
+    .sensor-box {
+      background: linear-gradient(135deg, #FFFDF9 0%, #FFF4EA 100%);
+      border: 2px dashed #E8CBB2;
+      border-radius: 18px;
+      padding: 14px;
+      margin-bottom: 14px;
+    }
+
+    .sensor-box.listening {
+      border-style: solid;
+      border-color: var(--mint);
+      background: linear-gradient(135deg, #F3FDF8 0%, #E7FBF1 100%);
+    }
+
+    .sensor-box.detecting {
+      border-style: solid;
+      border-color: var(--coral);
+      background: linear-gradient(135deg, #FFF5F2 0%, #FFEAE4 100%);
+    }
+
+    .sensor-top {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .mic-toggle-btn {
+      border: none;
+      border-radius: 999px;
+      padding: 10px 18px;
+      font-size: 0.88rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--coral);
+      color: #fff;
+      box-shadow: 0 6px 16px -6px rgba(255, 140, 122, 0.7);
+      transition: transform 0.12s ease, background 0.15s ease;
+    }
+
+    .mic-toggle-btn.active {
+      background: var(--mint);
+      box-shadow: 0 6px 16px -6px rgba(52, 179, 138, 0.7);
+    }
+
+    .mic-toggle-btn:active { transform: scale(0.97); }
+
+    .meter-wrap {
+      margin-top: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .meter-bar {
+      flex: 1;
+      height: 12px;
+      background: rgba(74, 53, 42, 0.08);
+      border-radius: 999px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .meter-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--mint), var(--honey), var(--coral));
+      border-radius: 999px;
+      transition: width 0.08s linear;
+    }
+
+    .threshold-mark {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 3px;
+      background: var(--ink);
+      opacity: 0.45;
+    }
+
+    .sensor-meta {
+      margin-top: 8px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 0.74rem;
+      color: var(--muted);
+    }
+
+    /* ---------- Aqua Voice Input Box ---------- */
+    .aqua-box {
+      background: var(--surface-warm);
+      border: 2px solid var(--line);
+      border-radius: 18px;
+      padding: 12px;
+      margin-bottom: 14px;
+    }
+
+    .aqua-box-head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      margin-bottom: 8px;
+      font-size: 0.8rem;
+      font-weight: 800;
+    }
+
+    textarea.voice-input {
+      width: 100%;
+      min-height: 76px;
+      border: 1.5px solid var(--line);
+      border-radius: 14px;
+      padding: 10px 12px;
+      font-size: 0.9rem;
+      color: var(--ink);
+      background: #fff;
+      resize: vertical;
+      outline: none;
+    }
+
+    textarea.voice-input:focus {
+      border-color: var(--coral);
+      box-shadow: 0 0 0 3px rgba(255, 140, 122, 0.18);
+    }
+
+    .aqua-actions {
+      margin-top: 8px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .primary-btn {
+      border: none;
+      background: var(--ink);
+      color: #fff;
+      border-radius: 999px;
+      padding: 8px 16px;
+      font-size: 0.82rem;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .primary-btn.coral { background: var(--coral); }
+    .primary-btn.mint { background: var(--mint); }
+    .primary-btn:hover { opacity: 0.92; }
+
+    .context-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-top: 8px;
+    }
+
+    .context-chip {
+      border: 1px solid var(--line);
+      background: #FFF9F2;
+      color: var(--muted);
+      border-radius: 999px;
+      padding: 3px 9px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .context-chip:hover {
+      background: var(--honey-soft);
+      color: var(--ink);
+    }
+
+    /* ---------- Demo Scenario Buttons ---------- */
+    .demo-section-title {
+      font-size: 0.78rem;
+      font-weight: 800;
+      color: var(--muted);
+      margin: 12px 0 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .demo-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(175px, 1fr));
+      gap: 7px;
+      margin-bottom: 14px;
+    }
+
+    .demo-btn {
+      border: 1.5px solid var(--line);
+      background: #FFFDF9;
+      color: var(--ink);
+      border-radius: 14px;
+      padding: 8px 10px;
+      text-align: left;
+      font-size: 0.77rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.1s ease, border-color 0.15s ease, background 0.15s ease;
+    }
+
+    .demo-btn:hover {
+      border-color: var(--coral);
+      background: var(--coral-soft);
+      transform: translateY(-1px);
+    }
+
+    .demo-btn small {
+      display: block;
+      font-size: 0.68rem;
+      color: var(--muted);
+      font-weight: 500;
+      margin-top: 2px;
+    }
+
+    /* ---------- Rolling Buffer Timeline ---------- */
+    .buffer-box {
+      background: #FAF5EE;
+      border-radius: 16px;
+      padding: 12px;
+      border: 1.5px solid var(--line);
+    }
+
+    .buffer-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.76rem;
+      font-weight: 800;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .bubble-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 250px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    .bubble {
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+      animation: popIn 0.22s ease;
+    }
+
+    .bubble.riku {
+      flex-direction: row-reverse;
+    }
+
+    .avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 12px;
+      background: #fff;
+      border: 1.5px solid var(--line);
+      display: grid;
+      place-items: center;
+      font-size: 1rem;
+      flex-shrink: 0;
+    }
+
+    .bubble-body {
+      max-width: 82%;
+      background: #fff;
+      border: 1.5px solid var(--line);
+      border-radius: 14px;
+      padding: 7px 11px;
+      font-size: 0.82rem;
+    }
+
+    .bubble.riku .bubble-body {
+      background: #FFFDF2;
+      border-color: #F4DFA6;
+    }
+
+    .bubble-meta {
+      font-size: 0.66rem;
+      color: var(--muted);
+      font-weight: 700;
+      margin-bottom: 2px;
+    }
+
+    /* ---------- Mom's Phone Shell ---------- */
+    .phone-frame {
+      background: #2C211C;
+      border-radius: 38px;
+      padding: 12px;
+      box-shadow: 0 22px 45px -16px rgba(74, 53, 42, 0.42);
+      position: relative;
+    }
+
+    .workspace.mode-mom .phone-frame {
+      border-radius: 26px;
+      padding: 8px;
+    }
+
+    .phone-screen {
+      background: #FFFDF9;
+      border-radius: 28px;
+      overflow: hidden;
+      min-height: 700px;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    .phone-statusbar {
+      background: #FFF6EE;
+      padding: 10px 18px 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.74rem;
+      font-weight: 800;
+      border-bottom: 1.5px solid var(--line);
+    }
+
+    .live-banner {
+      padding: 10px 14px;
+      background: var(--mint-soft);
+      border-bottom: 1.5px solid var(--line);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: background 0.25s ease;
+    }
+
+    .live-banner.alert { background: var(--danger-soft); }
+    .live-banner.warn { background: var(--honey-soft); }
+    .live-banner.happy { background: var(--sakura-soft); }
+
+    .live-emoji { font-size: 1.35rem; }
+
+    .live-text strong {
+      display: block;
+      font-size: 0.82rem;
+      line-height: 1.25;
+    }
+
+    .live-text span {
+      display: block;
+      font-size: 0.7rem;
+      color: var(--muted);
+    }
+
+    /* Push Toast inside Phone */
+    .push-toast {
+      position: absolute;
+      top: 44px;
+      left: 12px;
+      right: 12px;
+      z-index: 20;
+      background: rgba(74, 53, 42, 0.95);
+      color: #fff;
+      border-radius: 16px;
+      padding: 10px 14px;
+      font-size: 0.78rem;
+      box-shadow: 0 12px 24px rgba(0,0,0,0.22);
+      transform: translateY(-130%);
+      opacity: 0;
+      pointer-events: none;
+      transition: transform 0.28s cubic-bezier(.22,.61,.36,1), opacity 0.25s ease;
+    }
+
+    .push-toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    /* Phone Tabs */
+    .phone-tabs {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 4px;
+      padding: 8px 10px;
+      background: #FFF9F2;
+      border-bottom: 1.5px solid var(--line);
+    }
+
+    .phone-tab {
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      font-size: 0.74rem;
+      font-weight: 800;
+      padding: 8px 4px;
+      border-radius: 12px;
+      cursor: pointer;
+    }
+
+    .phone-tab.active {
+      background: var(--surface);
+      color: var(--ink);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .phone-content {
+      padding: 14px;
+      flex: 1;
+      overflow-y: auto;
+      max-height: 620px;
+    }
+
+    /* ---------- Mom Cards ---------- */
+    .m-card {
+      background: #fff;
+      border: 1.5px solid var(--line);
+      border-radius: 18px;
+      padding: 13px;
+      margin-bottom: 12px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .m-card.urgent {
+      border-color: #FDA4AF;
+      background: #FFFBFB;
+    }
+
+    .m-card.sakura {
+      border-color: #F9A8D4;
+      background: #FFF9FC;
+    }
+
+    .m-card h3 {
+      margin: 0 0 8px;
+      font-size: 0.9rem;
+      font-weight: 900;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+    }
+
+    .timeline-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      margin: 8px 0 10px;
+    }
+
+    .t-step {
+      display: grid;
+      grid-template-columns: 62px 1fr;
+      gap: 8px;
+      align-items: start;
+      font-size: 0.78rem;
+      background: #FFF9F2;
+      border-radius: 11px;
+      padding: 7px 9px;
+    }
+
+    .t-step .t-tag {
+      font-size: 0.68rem;
+      font-weight: 800;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 2px 6px;
+      text-align: center;
+    }
+
+    .coach-tip {
+      background: var(--honey-soft);
+      border-left: 4px solid var(--honey);
+      border-radius: 10px;
+      padding: 9px 11px;
+      font-size: 0.77rem;
+      margin-bottom: 10px;
+    }
+
+    .script-box {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      margin-bottom: 10px;
+    }
+
+    .script-line {
+      border-radius: 12px;
+      padding: 8px 10px;
+      font-size: 0.8rem;
+      background: #F4FBF8;
+      border: 1px solid #C8EFE0;
+    }
+
+    .script-line.riku {
+      background: #FFF9EB;
+      border-color: #F7DF9C;
+    }
+
+    .script-line.both {
+      background: var(--sky-soft);
+      border-color: #C4DDF7;
+    }
+
+    .script-line strong {
+      display: block;
+      font-size: 0.7rem;
+      color: var(--muted);
+      margin-bottom: 2px;
+    }
+
+    .ng-box {
+      background: var(--danger-soft);
+      border: 1px dashed #FDA4AF;
+      border-radius: 12px;
+      padding: 8px 10px;
+      font-size: 0.75rem;
+      color: #9F1239;
+      margin-bottom: 10px;
+    }
+
+    /* Timer Widget */
+    .timer-widget {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      background: #FFF9F2;
+      border: 1.5px solid var(--line);
+      border-radius: 14px;
+      padding: 9px 12px;
+      margin-top: 8px;
+    }
+
+    .timer-digits {
+      font-size: 1.35rem;
+      font-weight: 900;
+      letter-spacing: 0.04em;
+      color: var(--coral);
+    }
+
+    /* ---------- Museum Exhibits (Polaroid + Tape) ---------- */
+    .growth-pillar {
+      background: linear-gradient(90deg, #FFF5EE, #FDF2F8);
+      border: 1.5px solid var(--line);
+      border-radius: 16px;
+      padding: 10px 12px;
+      margin-bottom: 12px;
+      font-size: 0.75rem;
+    }
+
+    .pillar-marks {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      overflow-x: auto;
+      padding-top: 6px;
+    }
+
+    .pillar-mark {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 4px 8px;
+      white-space: nowrap;
+      font-weight: 700;
+      font-size: 0.71rem;
+    }
+
+    .exhibit-card {
+      position: relative;
+      background: #fff;
+      border: 2px solid #EFE0D1;
+      border-radius: 18px;
+      padding: 12px;
+      margin-bottom: 12px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .exhibit-card::before {
+      content: "";
+      position: absolute;
+      top: -7px;
+      left: 50%;
+      transform: translateX(-50%) rotate(-2deg);
+      width: 58px;
+      height: 14px;
+      background: rgba(255, 196, 130, 0.65);
+      border-radius: 3px;
+    }
+
+    .exhibit-card.graduated {
+      border-color: #F9A8D4;
+      background: #FFF9FC;
+    }
+
+    .exhibit-card.graduated::before {
+      background: rgba(244, 114, 182, 0.45);
+    }
+
+    .exhibit-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .word-pair {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+      font-size: 1rem;
+      font-weight: 900;
+    }
+
+    .word-child {
+      background: var(--honey-soft);
+      padding: 2px 9px;
+      border-radius: 10px;
+    }
+
+    .word-adult {
+      color: var(--mint);
+    }
+
+    .exhibit-quote {
+      font-size: 0.76rem;
+      color: var(--muted);
+      background: #FFFDF9;
+      border-radius: 10px;
+      padding: 6px 9px;
+      margin: 7px 0;
+      border: 1px solid var(--line);
+    }
+
+    .photo-frame {
+      margin-top: 8px;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 4px solid #fff;
+      box-shadow: 0 4px 12px rgba(74, 53, 42, 0.12);
+      background: #FAF5EE;
+    }
+
+    .photo-frame img {
+      display: block;
+      width: 100%;
+      max-height: 165px;
+      object-fit: cover;
+    }
+
+    .photo-caption {
+      padding: 6px 8px;
+      font-size: 0.73rem;
+      color: var(--ink);
+      background: #fff;
+    }
+
+    .exhibit-actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    .mini-btn {
+      border: 1px solid var(--line);
+      background: #FFF9F2;
+      color: var(--ink);
+      border-radius: 999px;
+      padding: 5px 10px;
+      font-size: 0.71rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .mini-btn:hover { background: var(--coral-soft); }
+    .mini-btn.mint { background: var(--mint-soft); border-color: #9EE2C9; color: #167A5B; }
+    .mini-btn.sakura { background: var(--sakura-soft); border-color: #F9A8D4; color: #BE185D; }
+
+    .memo-input-row {
+      margin-top: 7px;
+      display: flex;
+      gap: 6px;
+    }
+
+    .memo-input-row input {
+      flex: 1;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 5px 10px;
+      font-size: 0.73rem;
+      outline: none;
+    }
+
+    .vocab-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 6px;
+    }
+
+    .vocab-chip {
+      background: var(--mint-soft);
+      color: #167A5B;
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 0.74rem;
+      font-weight: 800;
+    }
+
+    .empty-note {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.8rem;
+      padding: 16px 8px;
+    }
+
+    @keyframes popIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 960px) {
+      .workspace {
+        grid-template-columns: 1fr;
+      }
+      .phone-content {
+        max-height: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <img src="/icon.svg" alt="ことばの博物館アイコン" class="brand-icon" />
+        <div>
+          <h1>ことばの博物館 ＆ みまもりママコーチ</h1>
+          <p class="sub">親の目がない子ども部屋を Aqua Voice × 声感知で見守り、お母さんのスマホへ届けます</p>
+        </div>
+      </div>
+
+      <div class="controls-group">
+        <div class="pill-switch" id="viewSwitch" aria-label="表示モード切替">
+          <button type="button" data-view="split" class="active">🖥️ デモ2画面</button>
+          <button type="button" data-view="room">🧒 子ども部屋</button>
+          <button type="button" data-view="mom">📱 ママスマホ</button>
+        </div>
+
+        <div class="pill-switch" id="ageSwitch" aria-label="年齢モード切替">
+          <button type="button" data-age="kindergarten" class="active">📛 幼稚園児</button>
+          <button type="button" data-age="elementary">🎒 小学生</button>
+        </div>
+
+        <button type="button" class="icon-btn" id="soundToggleBtn">🔔 通知音 ON</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="workspace" id="workspace">
+    <!-- ==================== LEFT: 子ども部屋デバイス ==================== -->
+    <section class="panel room-pane" aria-label="子ども部屋見守り端末">
+      <div class="pane-header">
+        <h2 class="pane-title">🧒🧒 子ども部屋端末（親不在時・常時ON）</h2>
+        <span class="badge badge-mint" id="privacyBadge">🔒 生音声は即破棄・直近3分のみ</span>
+      </div>
+
+      <!-- 声感知オート録音（VAD + Web Speech API） -->
+      <div class="sensor-box" id="sensorBox">
+        <div class="sensor-top">
+          <div>
+            <strong id="sensorStateTitle" style="font-size:0.9rem;">🟢 見守り待機中（無音時は保存・通信ゼロ）</strong>
+            <div id="sensorStateSub" style="font-size:0.74rem;color:var(--muted);">
+              設置時に1タップONすると、声を感知した瞬間だけ自動で聞き取ります
+            </div>
+          </div>
+          <button type="button" class="mic-toggle-btn" id="vadToggleBtn">
+            🎙️ 常時みまもり録音 ON
+          </button>
+        </div>
+
+        <div class="meter-wrap">
+          <span style="font-size:0.72rem;font-weight:800;color:var(--muted);">音量</span>
+          <div class="meter-bar">
+            <div class="meter-fill" id="meterFill"></div>
+            <div class="threshold-mark" id="thresholdMark" style="left: 18%;"></div>
+          </div>
+          <span id="meterLabel" style="font-size:0.72rem;font-weight:800;min-width:46px;text-align:right;">待機</span>
+        </div>
+
+        <div class="sensor-meta">
+          <label style="display:flex;align-items:center;gap:6px;">
+            声感知しきい値:
+            <input type="range" id="thresholdSlider" min="5" max="60" value="18" style="width:90px;" />
+          </label>
+          <span id="speechSupportHint">Web音声認識 ＋ Aqua Voice 入力対応</span>
+        </div>
+      </div>
+
+      <!-- Aqua Voice 直結（ノーボタン自動発火） -->
+      <div class="aqua-box">
+        <div class="aqua-box-head">
+          <span>✨ Aqua Voice 入力エリア（入力後 1.5秒で自動発火）</span>
+          <span class="badge badge-coral" id="autoTriggerBadge">ノーボタン待機</span>
+        </div>
+        <textarea
+          id="voiceInput"
+          class="voice-input"
+          placeholder="ここに Aqua Voice（ハンズフリー等）で話した言葉が入ると、ボタン操作なしで自動解析してお母さんのスマホに届きます。（例：「ソラ：僕が先に使ってた！ 返して！」）"
+        ></textarea>
+        <div class="aqua-actions">
+          <span style="font-size:0.72rem;color:var(--muted);">💡 上のヒント語を画面に表示し Aqua Voice の認識精度を向上</span>
+          <button type="button" class="primary-btn coral" id="sendNowBtn">⚡ 今すぐ解析・送信</button>
+        </div>
+        <div class="context-chips" id="contextChips">
+          <button type="button" class="context-chip" data-word="とうもころし">🌽 とうもころし</button>
+          <button type="button" class="context-chip" data-word="てビリ">📺 てビリ</button>
+          <button type="button" class="context-chip" data-word="おちゃかな">🐟 おちゃかな</button>
+          <button type="button" class="context-chip" data-word="エベレーター">🛗 エベレーター</button>
+          <button type="button" class="context-chip" data-word="赤い電車">🚃 赤い電車</button>
+          <button type="button" class="context-chip" data-word="とうもろこし">🌸 とうもろこし</button>
+          <button type="button" class="context-chip" data-word="どんぐり">🎒 どんぐり</button>
+        </div>
+      </div>
+
+      <!-- ワンタップ実演シナリオ -->
+      <div class="demo-section-title">🎬 ワンタップ実演シナリオ（プレゼン・動作テスト用）</div>
+      <div class="demo-grid">
+        <button type="button" class="demo-btn" data-scenario="conflict">
+          🚨 ケンカ発生（発端→取り合い）
+          <small>2分前の発端を巻き戻して仲裁カンペ生成</small>
+        </button>
+        <button type="button" class="demo-btn" data-scenario="mispronounce">
+          🏛️ 言い間違い発見
+          <small>「とうもころし」「てビリ」を博物館へ</small>
+        </button>
+        <button type="button" class="demo-btn" data-scenario="graduate">
+          🌸 言い間違い卒業！
+          <small>「とうもろこし」と正しく言えた記念日</small>
+        </button>
+        <button type="button" class="demo-btn" data-scenario="elementaryConflict">
+          🎒 小学生：言った・言わない
+          <small>ルール口論の事実整理＋声かけ案</small>
+        </button>
+        <button type="button" class="demo-btn" data-scenario="kindness">
+          💖 隠れた仲良し発見
+          <small>「半分こしよう」「ありがとう」をキャッチ</small>
+        </button>
+        <button type="button" class="demo-btn" data-scenario="todo">
+          🎒 明日の持ち物ポロッと
+          <small>「明日どんぐりと牛乳パック」を自動抽出</small>
+        </button>
+      </div>
+
+      <!-- 直近3分ローリングバッファ -->
+      <div class="buffer-box">
+        <div class="buffer-head">
+          <span>💬 直近3分ローリングバッファ（話者分離ログ）</span>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span id="bufferCountdown">保持: 0件</span>
+            <button type="button" class="mini-btn" id="clearBufferBtn">🧹 クリア</button>
+          </div>
+        </div>
+        <div class="bubble-list" id="bubbleList">
+          <div class="empty-note">まだ会話は届いていません。マイクをONにするか、上のシナリオを試してください。</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== RIGHT: お母さんのスマホ PWA ==================== -->
+    <section class="mom-pane" aria-label="お母さんのスマホ画面">
+      <div class="phone-frame">
+        <div class="phone-screen">
+          <div class="push-toast" id="pushToast"></div>
+
+          <div class="phone-statusbar">
+            <span id="phoneClock">12:30</span>
+            <span>ママのみまもり PWA</span>
+            <span>📶 100%</span>
+          </div>
+
+          <div class="live-banner" id="liveBanner">
+            <div class="live-emoji" id="liveEmoji">🟢</div>
+            <div class="live-text">
+              <strong id="liveLabel">子ども部屋は平和です</strong>
+              <span id="liveDetail">常時待機中・問題なければ音声は保存されません</span>
+            </div>
+          </div>
+
+          <nav class="phone-tabs" aria-label="ママスマホメニュー">
+            <button type="button" class="phone-tab active" data-tab="arbitration">
+              💬 仲裁・伝え方
+            </button>
+            <button type="button" class="phone-tab" data-tab="museum">
+              🏛️ ことば博物館
+            </button>
+            <button type="button" class="phone-tab" data-tab="discover">
+              💖 ほっこり・発見
+            </button>
+          </nav>
+
+          <div class="phone-content">
+            <!-- Tab 1: ケンカ仲裁＆子どもへの伝え方アドバイス -->
+            <div id="tab-arbitration"></div>
+
+            <!-- Tab 2: ことばの博物館 -->
+            <div id="tab-museum" style="display:none;"></div>
+
+            <!-- Tab 3: ほっこり・珍会話・持ち物発見 -->
+            <div id="tab-discover" style="display:none;"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    (function () {
+      const STORAGE_KEY = 'kotoba_museum_state_v1';
+      const BUFFER_TTL_MS = 180 * 1000; // 3分間ローリングバッファ
+      const syncChannel = typeof BroadcastChannel !== 'undefined'
+        ? new BroadcastChannel('kotoba-museum-sync')
+        : null;
+
+      // -------------------- 初期データ --------------------
+      const defaultState = {
+        viewMode: new URLSearchParams(location.search).get('view') || 'split',
+        ageStage: 'kindergarten',
+        activeTab: 'arbitration',
+        soundOn: true,
+        shortScript: false,
+        liveStatus: {
+          emoji: '🟢',
+          level: 'peace',
+          label: '子ども部屋は平和に遊んでいます',
+          detail: '直近3分バッファのみ監視・普段の雑談は自動消去',
+        },
+        buffer: [
+          {
+            id: 'b1',
+            speakerId: 'sora',
+            speaker: '兄・ソラ',
+            avatar: '🦁',
+            text: 'きょうはレゴで駅をつくるんだー',
+            timeLabel: '2分前',
+            ts: Date.now() - 95000,
+          },
+        ],
+        latestConflict: null,
+        pendingMuseum: null,
+        exhibits: [
+          {
+            id: 'ex-corn',
+            kind: 'mispronunciation',
+            icon: '🌽',
+            childWord: 'とうもころし',
+            adultWord: 'とうもろこし',
+            category: 'たべもの',
+            firstSeen: '2026/05/12',
+            lastSeen: '今日',
+            count: 42,
+            quote: '「きょうのおやつ、とうもころしがいい！」',
+            status: 'active',
+            graduatedAt: null,
+            photoDataUrl: '',
+            photoMemo: '',
+          },
+          {
+            id: 'ex-tv',
+            kind: 'mispronunciation',
+            icon: '📺',
+            childWord: 'てビリ',
+            adultWord: 'テレビ',
+            category: 'おうち',
+            firstSeen: '2026/08/03',
+            lastSeen: '昨日',
+            count: 19,
+            quote: '「ごはんのあと、てビリみていい？」',
+            status: 'active',
+            graduatedAt: null,
+            photoDataUrl: '',
+            photoMemo: '',
+          },
+          {
+            id: 'ex-fish',
+            kind: 'mispronunciation',
+            icon: '🐟',
+            childWord: 'おちゃかな',
+            adultWord: 'お魚',
+            category: 'たべもの',
+            firstSeen: '2026/04/18',
+            lastSeen: '2026/10/14',
+            count: 31,
+            quote: '「すいぞくかんのおちゃかな、おおきい！」',
+            status: 'graduated',
+            graduatedAt: '2026/10/14',
+            photoDataUrl: '',
+            photoMemo: '水族館に行った日の思い出',
+          },
+        ],
+        newVocab: ['はんぶんこ', 'おやくそく', 'じゅんばん'],
+        discoveries: [
+          {
+            id: 'd1',
+            kind: 'kindness',
+            title: '親がいない間のやさしい会話✨',
+            summary: '兄・ソラ：「リク、これ半分こしよっか。大きいほうあげる」',
+            momAction: '寝る前に「さっき優しいお兄ちゃんだったの知ってるよ！」と褒めてあげましょう',
+            timeLabel: '今日 11:05',
+          },
+        ],
+        timer: {
+          remainingSec: 180,
+          running: false,
+        },
+      };
+
+      function loadState() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (!raw) return structuredClone(defaultState);
+          const parsed = JSON.parse(raw);
+          return {
+            ...structuredClone(defaultState),
+            ...parsed,
+            viewMode: new URLSearchParams(location.search).get('view') || parsed.viewMode || 'split',
+          };
+        } catch {
+          return structuredClone(defaultState);
+        }
+      }
+
+      let state = loadState();
+      let timerInterval = null;
+      let autoInputTimer = null;
+      let toastTimer = null;
+
+      function saveState(broadcast = true) {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        } catch {
+          // 容量超過時は写真以外の状態を優先保存
+        }
+        if (broadcast && syncChannel) {
+          syncChannel.postMessage({ type: 'state-sync', state });
+        }
+      }
+
+      if (syncChannel) {
+        syncChannel.onmessage = (ev) => {
+          if (ev.data?.type === 'state-sync' && ev.data.state) {
+            state = ev.data.state;
+            renderAll();
+          }
+        };
+      }
+
+      // -------------------- 通知音（Web Audio） --------------------
+      function playChime(type = 'alert') {
+        if (!state.soundOn) return;
+        try {
+          const ctx = new (window.AudioContext || window.webkitAudioContext)();
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          const now = ctx.currentTime;
+          if (type === 'graduation') {
+            osc.frequency.setValueAtTime(523.25, now);
+            osc.frequency.setValueAtTime(659.25, now + 0.12);
+            osc.frequency.setValueAtTime(783.99, now + 0.24);
+          } else if (type === 'timer') {
+            osc.frequency.setValueAtTime(880, now);
+            osc.frequency.setValueAtTime(660, now + 0.15);
+            osc.frequency.setValueAtTime(880, now + 0.3);
+          } else {
+            osc.frequency.setValueAtTime(680, now);
+            osc.frequency.setValueAtTime(880, now + 0.11);
+          }
+          gain.gain.setValueAtTime(0.12, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.46);
+        } catch {
+          // ignore autoplay restriction
+        }
+      }
+
+      function showToast(msg) {
+        const toast = document.getElementById('pushToast');
+        toast.textContent = msg;
+        toast.classList.add('show');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => toast.classList.remove('show'), 3600);
+      }
+
+      // -------------------- UI 切替・時計 --------------------
+      function updateClock() {
+        const now = new Date();
+        const hh = String(now.getHours()).padStart(2, '0');
+        const mm = String(now.getMinutes()).padStart(2, '0');
+        document.getElementById('phoneClock').textContent = `${hh}:${mm}`;
+      }
+      updateClock();
+      setInterval(updateClock, 15000);
+
+      // 3分を超えたバッファの自動消去ループ
+      setInterval(() => {
+        const now = Date.now();
+        const before = state.buffer.length;
+        state.buffer = state.buffer.filter((item) => now - (item.ts || now) < BUFFER_TTL_MS);
+        if (state.buffer.length !== before) {
+          saveState(false);
+          renderBuffer();
+        } else {
+          updateBufferCountdownLabel();
+        }
+      }, 5000);
+
+      function updateBufferCountdownLabel() {
+        const el = document.getElementById('bufferCountdown');
+        if (!el) return;
+        if (state.buffer.length === 0) {
+          el.textContent = '保持: 0件';
+          return;
+        }
+        const oldest = state.buffer[0]?.ts || Date.now();
+        const leftSec = Math.max(0, Math.ceil((BUFFER_TTL_MS - (Date.now() - oldest)) / 1000));
+        const m = Math.floor(leftSec / 60);
+        const s = String(leftSec % 60).padStart(2, '0');
+        el.textContent = `保持: ${state.buffer.length}件（自動消去 ${m}:${s}）`;
+      }
+
+      // -------------------- サーバー・AI 解析呼び出し --------------------
+      async function runAnalysis(rawText) {
+        const text = String(rawText || '').trim();
+        if (!text) return;
+
+        const badge = document.getElementById('autoTriggerBadge');
+        badge.textContent = '🧠 AI解析中...';
+
+        const activeMuseumWords = state.exhibits
+          .filter((e) => e.status === 'active')
+          .map((e) => e.childWord);
+
+        let result = null;
+        try {
+          const resp = await fetch('/api/analyze', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              text,
+              ageStage: state.ageStage,
+              history: state.buffer.slice(-8),
+              activeMuseumWords,
+              knownVocabulary: state.newVocab,
+            }),
+          });
+          if (resp.ok) {
+            result = await resp.json();
+          }
+        } catch {
+          // ネットワーク不通時用の最小ローカル応答
+          result = null;
+        }
+
+        if (!result || !result.ok) {
+          badge.textContent = '⚠️ 接続エラー（再試行可）';
+          return;
+        }
+
+        applyAnalysisResult(result);
+        badge.textContent = result.mode === 'gemini' ? '✨ Gemini 解析完了' : '✅ 解析完了';
+        setTimeout(() => {
+          badge.textContent = 'ノーボタン待機';
+        }, 2500);
+      }
+
+      function applyAnalysisResult(result) {
+        const nowTs = Date.now();
+        const nowStr = new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+
+        if (Array.isArray(result.utterances)) {
+          for (const u of result.utterances) {
+            state.buffer.push({
+              id: `u-${nowTs}-${Math.random().toString(36).slice(2, 6)}`,
+              speakerId: u.speakerId || 'sora',
+              speaker: u.speaker || '兄・ソラ',
+              avatar: u.avatar || '🦁',
+              text: u.text,
+              timeLabel: nowStr,
+              ts: nowTs,
+            });
+          }
+          if (state.buffer.length > 20) state.buffer = state.buffer.slice(-20);
+        }
+
+        if (result.liveStatus) {
+          state.liveStatus = result.liveStatus;
+        }
+
+        if (Array.isArray(result.newWords)) {
+          for (const w of result.newWords) {
+            if (!state.newVocab.includes(w)) state.newVocab.unshift(w);
+          }
+        }
+
+        if (result.eventType === 'conflict' && result.conflict) {
+          state.latestConflict = {
+            ...result.conflict,
+            createdAt: nowStr,
+            resolved: false,
+          };
+          state.activeTab = 'arbitration';
+          state.timer.remainingSec = result.conflict.advice?.recommendedTimerSec || 180;
+          playChime('alert');
+          showToast(`🚨 ${result.conflict.title} 伝え方カンペが届きました`);
+        } else if (result.eventType === 'museum_new' && result.museumItem) {
+          state.pendingMuseum = {
+            ...result.museumItem,
+            id: `ex-${nowTs}`,
+            createdAt: nowStr,
+          };
+          state.activeTab = 'museum';
+          playChime('alert');
+          showToast(`🏛️ 新しいことば「${result.museumItem.childWord}」を発見！`);
+        } else if (result.eventType === 'museum_grad' && result.museumItem) {
+          const target = state.exhibits.find(
+            (e) => e.childWord === result.museumItem.childWord && e.status === 'active',
+          );
+          if (target) {
+            target.status = 'graduated';
+            target.graduatedAt = new Date().toISOString().slice(0, 10).replace(/-/g, '/');
+            target.count += 1;
+          } else {
+            state.exhibits.unshift({
+              id: `grad-${nowTs}`,
+              kind: 'mispronunciation',
+              icon: result.museumItem.icon || '🌸',
+              childWord: result.museumItem.childWord,
+              adultWord: result.museumItem.adultWord,
+              category: result.museumItem.category || 'ことば',
+              firstSeen: '2026/06/01',
+              lastSeen: '今日',
+              count: 25,
+              quote: `「${result.museumItem.exampleQuote}」`,
+              status: 'graduated',
+              graduatedAt: new Date().toISOString().slice(0, 10).replace(/-/g, '/'),
+              photoDataUrl: '',
+              photoMemo: '今日はじめて正しく言えた記念！',
+            });
+          }
+          state.pendingMuseum = {
+            ...result.museumItem,
+            id: `grad-note-${nowTs}`,
+            autoApplied: true,
+          };
+          state.activeTab = 'museum';
+          playChime('graduation');
+          showToast(`🌸 卒業記念！「${result.museumItem.adultWord}」が言えました！`);
+        } else if (result.eventType === 'discovery' && result.discovery) {
+          state.discoveries.unshift({
+            id: `disc-${nowTs}`,
+            ...result.discovery,
+            timeLabel: `今日 ${nowStr}`,
+          });
+          state.activeTab = 'discover';
+          playChime('alert');
+          showToast(`${result.liveStatus?.emoji || '✨'} ${result.discovery.title}`);
+        }
+
+        saveState();
+        renderAll();
+      }
+
+      // -------------------- レンダリング --------------------
+      function renderAll() {
+        const ws = document.getElementById('workspace');
+        ws.className = `workspace mode-${state.viewMode}`;
+
+        document.querySelectorAll('#viewSwitch button').forEach((b) => {
+          b.classList.toggle('active', b.dataset.view === state.viewMode);
+        });
+        document.querySelectorAll('#ageSwitch button').forEach((b) => {
+          b.classList.toggle('active', b.dataset.age === state.ageStage);
+        });
+        document.getElementById('soundToggleBtn').textContent = state.soundOn ? '🔔 通知音 ON' : '🔕 通知音 OFF';
+
+        document.querySelectorAll('.phone-tab').forEach((b) => {
+          b.classList.toggle('active', b.dataset.tab === state.activeTab);
+        });
+        document.getElementById('tab-arbitration').style.display = state.activeTab === 'arbitration' ? 'block' : 'none';
+        document.getElementById('tab-museum').style.display = state.activeTab === 'museum' ? 'block' : 'none';
+        document.getElementById('tab-discover').style.display = state.activeTab === 'discover' ? 'block' : 'none';
+
+        const lb = document.getElementById('liveBanner');
+        lb.className = `live-banner ${state.liveStatus?.level || 'peace'}`;
+        document.getElementById('liveEmoji').textContent = state.liveStatus?.emoji || '🟢';
+        document.getElementById('liveLabel').textContent = state.liveStatus?.label || '';
+        document.getElementById('liveDetail').textContent = state.liveStatus?.detail || '';
+
+        renderBuffer();
+        renderArbitrationTab();
+        renderMuseumTab();
+        renderDiscoverTab();
+      }
+
+      function renderBuffer() {
+        const list = document.getElementById('bubbleList');
+        if (state.buffer.length === 0) {
+          list.innerHTML = '<div class="empty-note">直近3分間に記録された会話はありません（自動消去済み）。</div>';
+          updateBufferCountdownLabel();
+          return;
+        }
+        list.innerHTML = state.buffer
+          .map(
+            (b) => `
+          <div class="bubble ${b.speakerId === 'riku' ? 'riku' : 'sora'}">
+            <div class="avatar">${b.avatar || '👦'}</div>
+            <div class="bubble-body">
+              <div class="bubble-meta">${escapeHtml(b.speaker)} ・ ${escapeHtml(b.timeLabel || '')}</div>
+              <div>${escapeHtml(b.text)}</div>
+            </div>
+          </div>`,
+          )
+          .join('');
+        list.scrollTop = list.scrollHeight;
+        updateBufferCountdownLabel();
+      }
+
+      function formatTimer(sec) {
+        const m = String(Math.floor(sec / 60)).padStart(2, '0');
+        const s = String(sec % 60).padStart(2, '0');
+        return `${m}:${s}`;
+      }
+
+      function renderArbitrationTab() {
+        const container = document.getElementById('tab-arbitration');
+        const c = state.latestConflict;
+        if (!c) {
+          container.innerHTML = `
+            <div class="m-card">
+              <h3>💬 ケンカ仲裁 ＆ 子どもへの伝え方コーチ</h3>
+              <p style="font-size:0.8rem;color:var(--muted);margin:6px 0 10px;">
+                現在子ども部屋でトラブルは起きていません。ケンカの気配を検知すると、<strong>2分前の発端を巻き戻して</strong>「子どもへの上手な伝え方アドバイス」をここに届けます。
+              </p>
+              <button type="button" class="primary-btn coral" style="width:100%;" id="triggerDemoConflictBtn">
+                🚨 ケンカ実演を試してみる
+              </button>
+            </div>
+            <div class="m-card">
+              <h3>🛡️ 安心設計（人が最後に確認して決める）</h3>
+              <p style="font-size:0.76rem;color:var(--muted);margin:0;">
+                AI は「どちらが悪いか」を決めつけず、事実の整理と伝え方の候補を提案します。どの声かけを使うかは、お母さんが見て選べます。
+              </p>
+            </div>`;
+          const btn = document.getElementById('triggerDemoConflictBtn');
+          if (btn) btn.onclick = () => runScenario('conflict');
+          return;
+        }
+
+        const adv = c.advice;
+        const phrases = state.shortScript && adv.shortVersion ? adv.shortVersion : adv;
+
+        container.innerHTML = `
+          <div class="m-card ${c.resolved ? '' : 'urgent'}">
+            <h3>
+              <span>${c.resolved ? '✅ 仲直り完了！' : '🚨 ' + escapeHtml(c.title)}</span>
+              <span class="badge ${c.resolved ? 'badge-mint' : 'badge-coral'}">${escapeHtml(c.createdAt || '今')}</span>
+            </h3>
+            <div style="font-size:0.77rem;font-weight:700;background:#FFF0EC;padding:7px 10px;border-radius:10px;margin-bottom:8px;">
+              🔍 ${escapeHtml(c.truthConclusion)}
+            </div>
+            <div class="timeline-steps">
+              ${c.causeTimeline
+                .map(
+                  (t) => `
+                <div class="t-step">
+                  <span class="t-tag">${escapeHtml(t.timeLabel)}</span>
+                  <div><strong>${escapeHtml(t.actor)}:</strong> ${escapeHtml(t.fact)}</div>
+                </div>`,
+                )
+                .join('')}
+            </div>
+          </div>
+
+          <div class="m-card">
+            <h3>
+              <span>💡 子どもへの伝え方アドバイス</span>
+              <button type="button" class="mini-btn" id="toggleShortBtn">
+                ${state.shortScript ? '📝 丁寧なセリフに戻す' : '🔄 もっと短くする'}
+              </button>
+            </h3>
+
+            <div class="coach-tip">
+              <strong>🧠 ママコーチのコツ（${state.ageStage === 'elementary' ? '小学生モード' : '幼稚園児モード'}）:</strong><br/>
+              ${escapeHtml(adv.coachTip)}
+            </div>
+
+            <div class="script-box">
+              <div class="script-line">
+                <strong>🦁 まず兄・ソラへの伝え方</strong>
+                ${escapeHtml(phrases.toSora)}
+              </div>
+              <div class="script-line riku">
+                <strong>🐣 つぎに弟・リクへの伝え方</strong>
+                ${escapeHtml(phrases.toRiku)}
+              </div>
+              <div class="script-line both">
+                <strong>🤝 2人への仲直り・ルール提案</strong>
+                ${escapeHtml(phrases.toBoth)}
+              </div>
+            </div>
+
+            <div class="ng-box">
+              <strong>⚠️ 今は避けたい NG 声かけ:</strong> ${escapeHtml(adv.ngPhrase)}
+            </div>
+
+            <div class="timer-widget">
+              <div>
+                <div style="font-size:0.7rem;color:var(--muted);font-weight:700;">⏱️ 交代ルールタイマー</div>
+                <div class="timer-digits" id="timerDigits">${formatTimer(state.timer.remainingSec)}</div>
+              </div>
+              <div style="display:flex;gap:6px;">
+                <button type="button" class="primary-btn coral" id="timerStartBtn">
+                  ${state.timer.running ? '⏸ 停止' : '▶ スタート'}
+                </button>
+                <button type="button" class="mini-btn" id="timerResetBtn">↺ 3分</button>
+              </div>
+            </div>
+
+            <div style="display:flex;gap:8px;margin-top:10px;">
+              <button type="button" class="primary-btn mint" style="flex:1;" id="resolveConflictBtn">
+                ${c.resolved ? '✅ 仲直り記録済み' : '👍 この伝え方で声かけした！'}
+              </button>
+            </div>
+          </div>`;
+
+        document.getElementById('toggleShortBtn').onclick = () => {
+          state.shortScript = !state.shortScript;
+          saveState();
+          renderArbitrationTab();
+        };
+        document.getElementById('timerStartBtn').onclick = toggleTimer;
+        document.getElementById('timerResetBtn').onclick = resetTimer;
+        document.getElementById('resolveConflictBtn').onclick = () => {
+          state.latestConflict.resolved = true;
+          state.liveStatus = {
+            emoji: '🟢',
+            level: 'peace',
+            label: '仲直り完了！平和に戻りました',
+            detail: 'お母さんの神仲裁で2人が落ち着きました',
+          };
+          saveState();
+          renderAll();
+        };
+      }
+
+      function toggleTimer() {
+        state.timer.running = !state.timer.running;
+        if (state.timer.running) {
+          clearInterval(timerInterval);
+          timerInterval = setInterval(() => {
+            if (!state.timer.running) return;
+            if (state.timer.remainingSec > 0) {
+              state.timer.remainingSec -= 1;
+              const el = document.getElementById('timerDigits');
+              if (el) el.textContent = formatTimer(state.timer.remainingSec);
+            } else {
+              state.timer.running = false;
+              clearInterval(timerInterval);
+              playChime('timer');
+              showToast('⏱️ 3分タイマー終了！交代の時間だよ〜！');
+              renderArbitrationTab();
+            }
+          }, 1000);
+        } else {
+          clearInterval(timerInterval);
+        }
+        renderArbitrationTab();
+      }
+
+      function resetTimer() {
+        state.timer.running = false;
+        state.timer.remainingSec = 180;
+        clearInterval(timerInterval);
+        renderArbitrationTab();
+      }
+
+      function renderMuseumTab() {
+        const container = document.getElementById('tab-museum');
+        const activeExhibits = state.exhibits.filter((e) => e.status === 'active');
+        const gradExhibits = state.exhibits.filter((e) => e.status === 'graduated');
+
+        const pendingHtml = state.pendingMuseum && !state.pendingMuseum.autoApplied
+          ? `
+          <div class="m-card sakura">
+            <h3>
+              <span>✨ 新しいことばが見つかりました！</span>
+              <span class="badge badge-sakura">要確認</span>
+            </h3>
+            <div class="word-pair" style="margin-bottom:6px;">
+              <span class="word-child">${escapeHtml(state.pendingMuseum.childWord)}</span>
+              <span>➔</span>
+              <span class="word-adult">${escapeHtml(state.pendingMuseum.adultWord)}</span>
+            </div>
+            <p style="font-size:0.76rem;margin:0 0 8px;">${escapeHtml(state.pendingMuseum.note)}</p>
+            <div style="display:flex;gap:8px;">
+              <button type="button" class="primary-btn coral" style="flex:1;" id="approveMuseumBtn">🏛️ 博物館に収蔵する</button>
+              <button type="button" class="mini-btn" id="dismissMuseumBtn">見送る</button>
+            </div>
+          </div>`
+          : state.pendingMuseum && state.pendingMuseum.autoApplied
+            ? `
+          <div class="m-card sakura">
+            <h3><span>🌸 卒業おめでとうございます！</span><span class="badge badge-sakura">殿堂入り</span></h3>
+            <p style="font-size:0.78rem;margin:0 0 8px;">${escapeHtml(state.pendingMuseum.note)}</p>
+            <button type="button" class="mini-btn" id="dismissMuseumBtn">閉じる</button>
+          </div>`
+            : '';
+
+        const renderExhibitCard = (ex) => `
+          <div class="exhibit-card ${ex.status === 'graduated' ? 'graduated' : ''}">
+            <div class="exhibit-top">
+              <div class="word-pair">
+                <span>${ex.icon || '🏷️'}</span>
+                <span class="word-child">${escapeHtml(ex.childWord)}</span>
+                <span>➔</span>
+                <span class="word-adult">${escapeHtml(ex.adultWord)}</span>
+              </div>
+              <span class="badge ${ex.status === 'graduated' ? 'badge-sakura' : 'badge-mint'}">
+                ${ex.status === 'graduated' ? '🎓 卒業' : '🟢 現役'}
+              </span>
+            </div>
+            <div style="font-size:0.7rem;color:var(--muted);margin-top:4px;">
+              初発見: ${escapeHtml(ex.firstSeen)} ／ 登場 ${ex.count}回
+              ${ex.graduatedAt ? `／ 🌸 卒業日: <strong>${escapeHtml(ex.graduatedAt)}</strong>` : ''}
+            </div>
+            <div class="exhibit-quote">${escapeHtml(ex.quote || '')}</div>
+            ${
+              ex.photoDataUrl || ex.photoMemo
+                ? `<div class="photo-frame">
+                    ${ex.photoDataUrl ? `<img src="${ex.photoDataUrl}" alt="${escapeHtml(ex.childWord)}の思い出写真" />` : ''}
+                    ${ex.photoMemo ? `<div class="photo-caption">📸 ${escapeHtml(ex.photoMemo)}</div>` : ''}
+                   </div>`
+                : ''
+            }
+            <div class="exhibit-actions">
+              <label class="mini-btn" style="display:inline-flex;align-items:center;gap:4px;">
+                📸 写真を追加
+                <input type="file" accept="image/*" data-photo-id="${ex.id}" style="display:none;" />
+              </label>
+              ${
+                ex.status === 'active'
+                  ? `<button type="button" class="mini-btn sakura" data-grad-id="${ex.id}">🎓 卒業にする</button>`
+                  : ''
+              }
+            </div>
+            <div class="memo-input-row">
+              <input type="text" placeholder="🎙️ Aqua Voice で写真メモを話す..." value="${escapeHtml(ex.photoMemo || '')}" data-memo-id="${ex.id}" />
+            </div>
+          </div>`;
+
+        container.innerHTML = `
+          ${pendingHtml}
+          <div class="growth-pillar">
+            <strong>📏 ことばの背比べ（いつ言わなくなったかの記録）</strong>
+            <div class="pillar-marks">
+              ${state.exhibits
+                .map(
+                  (e) => `<span class="pillar-mark">${e.icon || '🏷️'} ${escapeHtml(e.childWord)} ${e.status === 'graduated' ? '🌸' + escapeHtml(e.graduatedAt || '済') : '🟢現役'}</span>`,
+                )
+                .join('')}
+            </div>
+          </div>
+
+          <h4 style="margin:6px 0 8px;font-size:0.84rem;">🏷️ 第1展示室：いま現役のいいまちがい（${activeExhibits.length}点）</h4>
+          ${activeExhibits.length ? activeExhibits.map(renderExhibitCard).join('') : '<div class="empty-note">現役の展示はまだありません</div>'}
+
+          <h4 style="margin:14px 0 8px;font-size:0.84rem;">🎓 第2展示室：卒業アルバム・殿堂入り（${gradExhibits.length}点）</h4>
+          ${gradExhibits.length ? gradExhibits.map(renderExhibitCard).join('') : '<div class="empty-note">まだ卒業したことばはありません</div>'}
+
+          <div class="m-card" style="margin-top:12px;">
+            <h3><span>🌱 第3展示室：ふえた言葉（はじめて図鑑）</span><span class="badge badge-mint">+${state.newVocab.length}語</span></h3>
+            <div class="vocab-chips">
+              ${state.newVocab.map((w) => `<span class="vocab-chip">✨ ${escapeHtml(w)}</span>`).join('')}
+            </div>
+          </div>`;
+
+        const approveBtn = document.getElementById('approveMuseumBtn');
+        if (approveBtn) {
+          approveBtn.onclick = () => {
+            const p = state.pendingMuseum;
+            if (p.kind === 'new_word') {
+              if (!state.newVocab.includes(p.childWord)) state.newVocab.unshift(p.childWord);
+            } else {
+              const existing = state.exhibits.find((e) => e.childWord === p.childWord);
+              if (existing) {
+                existing.count += 1;
+                existing.lastSeen = '今日';
+                existing.quote = `「${p.exampleQuote}」`;
+              } else {
+                state.exhibits.unshift({
+                  id: p.id,
+                  kind: p.kind,
+                  icon: p.icon || '🏷️',
+                  childWord: p.childWord,
+                  adultWord: p.adultWord,
+                  category: p.category || 'ことば',
+                  firstSeen: new Date().toISOString().slice(0, 10).replace(/-/g, '/'),
+                  lastSeen: '今日',
+                  count: 1,
+                  quote: `「${p.exampleQuote}」`,
+                  status: 'active',
+                  graduatedAt: null,
+                  photoDataUrl: '',
+                  photoMemo: '',
+                });
+              }
+            }
+            state.pendingMuseum = null;
+            saveState();
+            renderMuseumTab();
+          };
+        }
+
+        const dismissBtn = document.getElementById('dismissMuseumBtn');
+        if (dismissBtn) {
+          dismissBtn.onclick = () => {
+            state.pendingMuseum = null;
+            saveState();
+            renderMuseumTab();
+          };
+        }
+
+        container.querySelectorAll('input[data-photo-id]').forEach((inp) => {
+          inp.onchange = (e) => handlePhotoUpload(inp.dataset.photoId, e.target.files?.[0]);
+        });
+
+        container.querySelectorAll('button[data-grad-id]').forEach((btn) => {
+          btn.onclick = () => {
+            const item = state.exhibits.find((x) => x.id === btn.dataset.gradId);
+            if (item) {
+              item.status = 'graduated';
+              item.graduatedAt = new Date().toISOString().slice(0, 10).replace(/-/g, '/');
+              playChime('graduation');
+              showToast(`🎓 「${item.childWord}」を卒業殿堂入りにしました！`);
+              saveState();
+              renderMuseumTab();
+            }
+          };
+        });
+
+        container.querySelectorAll('input[data-memo-id]').forEach((inp) => {
+          inp.onchange = () => {
+            const item = state.exhibits.find((x) => x.id === inp.dataset.memoId);
+            if (item) {
+              item.photoMemo = inp.value;
+              saveState();
+            }
+          };
+        });
+      }
+
+      function handlePhotoUpload(exhibitId, file) {
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          const img = new Image();
+          img.onload = () => {
+            // ローカル保存用に軽量リサイズ（プライバシー保護・外部送信なし）
+            const maxW = 540;
+            const scale = Math.min(1, maxW / img.width);
+            const canvas = document.createElement('canvas');
+            canvas.width = Math.round(img.width * scale);
+            canvas.height = Math.round(img.height * scale);
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.78);
+            const ex = state.exhibits.find((x) => x.id === exhibitId);
+            if (ex) {
+              ex.photoDataUrl = dataUrl;
+              saveState();
+              renderMuseumTab();
+              showToast('📸 標本カードに写真を飾りました！');
+            }
+          };
+          img.src = reader.result;
+        };
+        reader.readAsDataURL(file);
+      }
+
+      function renderDiscoverTab() {
+        const container = document.getElementById('tab-discover');
+        const itemsHtml = state.discoveries
+          .map((d) => {
+            const badgeClass =
+              d.kind === 'todo' ? 'badge-sky' : d.kind === 'funny' ? 'badge-honey' : 'badge-sakura';
+            const badgeLabel =
+              d.kind === 'todo' ? '🎒 持ち物・予定' : d.kind === 'funny' ? '😂 珍会話' : '💖 仲良し';
+            const calBtn = d.calendarEvent
+              ? `<a class="mini-btn mint" style="text-decoration:none;display:inline-block;margin-top:6px;" target="_blank" rel="noopener noreferrer" href="https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(d.calendarEvent.title)}&details=${encodeURIComponent(d.calendarEvent.note)}">📅 Googleカレンダーへ追加</a>`
+              : '';
+            return `
+              <div class="m-card">
+                <h3>
+                  <span>${escapeHtml(d.title)}</span>
+                  <span class="badge ${badgeClass}">${badgeLabel}</span>
+                </h3>
+                <p style="font-size:0.8rem;margin:0 0 6px;">${escapeHtml(d.summary)}</p>
+                <div style="font-size:0.74rem;color:var(--muted);background:#FFF9F2;padding:6px 9px;border-radius:10px;">
+                  💡 ${escapeHtml(d.momAction)}
+                </div>
+                ${calBtn}
+              </div>`;
+          })
+          .join('');
+
+        container.innerHTML = `
+          <div class="m-card" style="background:linear-gradient(135deg,#FFF9F2,#FFF2EC);">
+            <h3><span>📤 パパへ今日のまとめをシェア</span></h3>
+            <p style="font-size:0.76rem;color:var(--muted);margin:0 0 8px;">
+              今日の博物館コレクション・仲良しハイライトをLINE貼り付け用テキストにまとめます。
+            </p>
+            <button type="button" class="primary-btn mint" style="width:100%;" id="copyDigestBtn">
+              📋 LINE共有用ダイジェストをコピー
+            </button>
+          </div>
+          ${itemsHtml || '<div class="empty-note">まだ発見ログはありません</div>'}`;
+
+        document.getElementById('copyDigestBtn').onclick = async () => {
+          const activeWords = state.exhibits
+            .filter((e) => e.status === 'active')
+            .map((e) => `・${e.childWord}（${e.adultWord}）`)
+            .join('\n');
+          const text = `【今日の子ども部屋ダイジェスト🏛️】\n■ いま可愛いことば\n${activeWords}\n■ 今日のほっこり・発見\n${state.discoveries.slice(0, 2).map((d) => '・' + d.summary).join('\n')}`;
+          try {
+            await navigator.clipboard.writeText(text);
+            showToast('📋 LINE用ダイジェストをコピーしました！');
+          } catch {
+            showToast('📋 ダイジェストを生成しました');
+          }
+        };
+      }
+
+      // -------------------- 声感知オート録音（Web Audio VAD + SpeechRecognition） --------------------
+      let vadRunning = false;
+      let audioCtx = null;
+      let micStream = null;
+      let analyser = null;
+      let rafId = null;
+      let speechRec = null;
+      let speakingNow = false;
+      let silenceStartedAt = 0;
+
+      async function toggleVad() {
+        if (vadRunning) {
+          stopVad();
+          return;
+        }
+        try {
+          micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+          const src = audioCtx.createMediaStreamSource(micStream);
+          analyser = audioCtx.createAnalyser();
+          analyser.fftSize = 512;
+          src.connect(analyser);
+
+          vadRunning = true;
+          document.getElementById('vadToggleBtn').classList.add('active');
+          document.getElementById('vadToggleBtn').textContent = '⏹️ 見守り録音 稼働中（クリックで停止）';
+          document.getElementById('sensorBox').classList.add('listening');
+          document.getElementById('sensorStateTitle').textContent = '🟢 声感知センサー稼働中（無音時は保存ゼロ）';
+          document.getElementById('sensorStateSub').textContent = '子どもが話し始めると自動で聞き取りを開始します';
+
+          startSpeechRecognition();
+          loopVadMeter();
+        } catch {
+          showToast('🎙️ マイク許可がないため、Aqua Voice 入力またはシナリオをご使用ください');
+        }
+      }
+
+      function stopVad() {
+        vadRunning = false;
+        if (rafId) cancelAnimationFrame(rafId);
+        if (speechRec) {
+          try { speechRec.stop(); } catch {}
+          speechRec = null;
+        }
+        if (micStream) {
+          micStream.getTracks().forEach((t) => t.stop());
+          micStream = null;
+        }
+        if (audioCtx) {
+          try { audioCtx.close(); } catch {}
+          audioCtx = null;
+        }
+        document.getElementById('vadToggleBtn').classList.remove('active');
+        document.getElementById('vadToggleBtn').textContent = '🎙️ 常時みまもり録音 ON';
+        document.getElementById('sensorBox').classList.remove('listening', 'detecting');
+        document.getElementById('sensorStateTitle').textContent = '🟢 見守り待機中（無音時は保存・通信ゼロ）';
+        document.getElementById('meterFill').style.width = '0%';
+        document.getElementById('meterLabel').textContent = '待機';
+      }
+
+      function loopVadMeter() {
+        if (!vadRunning || !analyser) return;
+        const data = new Uint8Array(analyser.frequencyBinCount);
+        analyser.getByteTimeDomainData(data);
+        let sum = 0;
+        for (let i = 0; i < data.length; i += 1) {
+          const v = (data[i] - 128) / 128;
+          sum += v * v;
+        }
+        const rms = Math.min(100, Math.round(Math.sqrt(sum / data.length) * 280));
+        const threshold = Number(document.getElementById('thresholdSlider').value);
+
+        document.getElementById('meterFill').style.width = `${rms}%`;
+        const box = document.getElementById('sensorBox');
+        const label = document.getElementById('meterLabel');
+
+        if (rms >= threshold) {
+          speakingNow = true;
+          silenceStartedAt = 0;
+          box.classList.add('detecting');
+          label.textContent = '🔴 感知中';
+          document.getElementById('sensorStateTitle').textContent = '🔴 声を感知！自動で聞き取っています...';
+        } else if (speakingNow) {
+          if (!silenceStartedAt) silenceStartedAt = Date.now();
+          if (Date.now() - silenceStartedAt > 1500) {
+            speakingNow = false;
+            box.classList.remove('detecting');
+            label.textContent = '待機';
+            document.getElementById('sensorStateTitle').textContent = '🟢 声感知センサー稼働中（無音時は保存ゼロ）';
+          }
+        } else {
+          box.classList.remove('detecting');
+          label.textContent = '無音';
+        }
+
+        rafId = requestAnimationFrame(loopVadMeter);
+      }
+
+      function startSpeechRecognition() {
+        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SR) {
+          document.getElementById('speechSupportHint').textContent =
+            '※この環境は Aqua Voice の入力欄への自動入力をご利用ください';
+          return;
+        }
+        speechRec = new SR();
+        speechRec.lang = 'ja-JP';
+        speechRec.continuous = true;
+        speechRec.interimResults = true;
+
+        speechRec.onresult = (event) => {
+          let finalTranscript = '';
+          let interimTranscript = '';
+          for (let i = event.resultIndex; i < event.results.length; i += 1) {
+            const t = event.results[i][0].transcript;
+            if (event.results[i].isFinal) finalTranscript += t;
+            else interimTranscript += t;
+          }
+          const inp = document.getElementById('voiceInput');
+          if (interimTranscript) {
+            inp.value = interimTranscript;
+          }
+          if (finalTranscript.trim()) {
+            inp.value = finalTranscript.trim();
+            runAnalysis(finalTranscript.trim());
+          }
+        };
+
+        speechRec.onend = () => {
+          if (vadRunning) {
+            try { speechRec.start(); } catch {}
+          }
+        };
+
+        try { speechRec.start(); } catch {}
+      }
+
+      // -------------------- 実演シナリオ --------------------
+      async function runScenario(key) {
+        const inp = document.getElementById('voiceInput');
+        if (key === 'conflict') {
+          state.ageStage = 'kindergarten';
+          inp.value = 'ソラ：この赤い電車、駅を作ってからあとで使うからここに置いておくね。';
+          await runAnalysis(inp.value);
+          setTimeout(async () => {
+            inp.value = 'リク：あ、赤い電車だ！貸してー！\nソラ：ダメ！僕が先に使ってた！返してよ！\nリク：うわーん！ソラが叩いたー！ママー！';
+            await runAnalysis(inp.value);
+          }, 650);
+          return;
+        }
+        if (key === 'mispronounce') {
+          state.ageStage = 'kindergarten';
+          inp.value = 'リク：ねえねえ、きょうのおやつ、とうもころしがいい！あとでてビリもみよう！';
+          await runAnalysis(inp.value);
+          return;
+        }
+        if (key === 'graduate') {
+          state.ageStage = 'kindergarten';
+          inp.value = 'ソラ：ママー！きょうのとうもろこし、甘くてすごくおいしいね！';
+          await runAnalysis(inp.value);
+          return;
+        }
+        if (key === 'elementaryConflict') {
+          state.ageStage = 'elementary';
+          inp.value = 'ソラ：1回負けたら交代ってさっきルール決めたじゃん！\nリク：言ってないよ！そんなの聞いてない！ずるい！';
+          await runAnalysis(inp.value);
+          return;
+        }
+        if (key === 'kindness') {
+          inp.value = 'ソラ：リク、このお菓子はんぶんこしよう、どうぞ！\nリク：お兄ちゃんありがとう！だいじょうぶ？';
+          await runAnalysis(inp.value);
+          return;
+        }
+        if (key === 'todo') {
+          inp.value = 'リク：あ！明日幼稚園にどんぐりと牛乳パック持っていくんだよね！';
+          await runAnalysis(inp.value);
+        }
+      }
+
+      // -------------------- イベント結線 --------------------
+      document.getElementById('viewSwitch').addEventListener('click', (e) => {
+        const btn = e.target.closest('button[data-view]');
+        if (!btn) return;
+        state.viewMode = btn.dataset.view;
+        saveState();
+        renderAll();
+      });
+
+      document.getElementById('ageSwitch').addEventListener('click', (e) => {
+        const btn = e.target.closest('button[data-age]');
+        if (!btn) return;
+        state.ageStage = btn.dataset.age;
+        saveState();
+        renderAll();
+      });
+
+      document.getElementById('soundToggleBtn').addEventListener('click', () => {
+        state.soundOn = !state.soundOn;
+        saveState();
+        renderAll();
+      });
+
+      document.querySelectorAll('.phone-tab').forEach((tab) => {
+        tab.addEventListener('click', () => {
+          state.activeTab = tab.dataset.tab;
+          saveState();
+          renderAll();
+        });
+      });
+
+      document.getElementById('vadToggleBtn').addEventListener('click', toggleVad);
+
+      document.getElementById('thresholdSlider').addEventListener('input', (e) => {
+        document.getElementById('thresholdMark').style.left = `${e.target.value}%`;
+      });
+
+      // Aqua Voice ノーボタン自動発火（入力後 1.5 秒停止で自動送信）
+      document.getElementById('voiceInput').addEventListener('input', (e) => {
+        const val = e.target.value.trim();
+        const badge = document.getElementById('autoTriggerBadge');
+        clearTimeout(autoInputTimer);
+        if (!val) {
+          badge.textContent = 'ノーボタン待機';
+          return;
+        }
+        badge.textContent = '⏳ 1.5秒後に自動送信...';
+        autoInputTimer = setTimeout(() => {
+          runAnalysis(document.getElementById('voiceInput').value);
+        }, 1500);
+      });
+
+      document.getElementById('sendNowBtn').addEventListener('click', () => {
+        clearTimeout(autoInputTimer);
+        runAnalysis(document.getElementById('voiceInput').value);
+      });
+
+      document.getElementById('contextChips').addEventListener('click', (e) => {
+        const chip = e.target.closest('button[data-word]');
+        if (!chip) return;
+        const inp = document.getElementById('voiceInput');
+        inp.value = inp.value ? `${inp.value} ${chip.dataset.word}` : chip.dataset.word;
+        inp.dispatchEvent(new Event('input'));
+      });
+
+      document.querySelectorAll('.demo-btn[data-scenario]').forEach((btn) => {
+        btn.addEventListener('click', () => runScenario(btn.dataset.scenario));
+      });
+
+      document.getElementById('clearBufferBtn').addEventListener('click', () => {
+        state.buffer = [];
+        saveState();
+        renderBuffer();
+      });
+
+      // ローカル server.mjs 接続時は SSE で端末間リアルタイム同期
+      if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+        try {
+          const es = new EventSource('/api/stream');
+          es.onmessage = (ev) => {
+            try {
+              const msg = JSON.parse(ev.data);
+              if (msg?.type === 'analyzed' && msg.payload) {
+                // 自タブが送信した直後の二重反映を避ける簡易チェック
+                const latestText = msg.payload.utterances?.[0]?.text;
+                const already = state.buffer.some(
+                  (b) => b.text === latestText && Date.now() - (b.ts || 0) < 2500,
+                );
+                if (!already) applyAnalysisResult(msg.payload);
+              }
+            } catch {}
+          };
+        } catch {}
+      }
+
+      function escapeHtml(str) {
+        return String(str ?? '')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      renderAll();
+    })();
+  </script>
+</body>
+</html>
