@@ -29,7 +29,6 @@
   <p id="summary" class="summary"></p>
   <div id="kidsBar" class="chips" role="group" aria-label="子どもで絞り込む"></div>
   <div class="row" style="margin-top:8px">
-    <button id="seedTaro" class="quiet" type="button">(TEST) たろうのサンプルを入れる</button>
     <span id="voiceMsg" class="muted" aria-live="polite"></span>
   </div>
 
@@ -466,12 +465,33 @@ async function seedTaro() {
   saveMuseum(s.museum); saveEvents(s.events);
   return true;
 }
-$('seedTaro').onclick = async () => {
-  $('voiceMsg').textContent = (await seedTaro()) ? 'たろうの声を入れました' : 'たろうの声は、もう入っています';
-  render(); arrive();
-};
 
-// 例（ゆい・そら）は外した。サンプルは、はじめて開いたときに「たろう」だけ入る（下の起動時の処理）
+// 例の子「ゆい」「そら」: 行だけ（声なし）。声が入っているのは「たろう」だけ
+function seedExamples() {
+  let kids = loadChildren();
+  for (const [name, birthday] of [['ゆい', '2023-07-15'], ['そら', '2021-02-01']]) {
+    if (!kids.some((k) => k.name === name)) kids = addChild(kids, { name, birthday });
+  }
+  saveChildren(kids);
+  const yui = kids.find((k) => k.name === 'ゆい')?.id ?? null, sora = kids.find((k) => k.name === 'そら')?.id ?? null;
+  if (loadEvents().some((e) => e.childId === yui)) return false; // 2回入れない
+  let s = { museum: loadMuseum(), events: loadEvents() };
+  const T = { wrong: 'とうもころし', right: 'とうもろこし' }, E = { wrong: 'えべれーたー', right: 'エレベーター' }, R = { wrong: 'てびり', right: 'テレビ' };
+  const day = (offset) => new Date(Date.now() + offset * 86400000).toLocaleDateString('sv-SE');
+  for (const [c, at, quote, who] of [
+    [E, '2026-11-08T17:40:00', 'えべれーたー のる', sora],
+    [E, '2026-11-12T08:15:00', 'えべれーたー きた', sora],
+    [T, '2026-11-18T18:30:00', 'とうもころし たべたい', yui],
+    [R, '2026-11-21T07:20:00', 'てびり つけて', yui],
+    [T, '2026-11-21T18:45:00', 'とうもころし おいしい', yui],
+    [T, `${day(-1)}T07:50:00`, 'とうもころし ちょうだい', yui],
+    [R, `${day(0)}T08:10:00`, 'てびり みて！', yui],
+    [T, `${day(0)}T12:30:00`, 'とうもころし また たべたい', yui], // 4回目で、たまごが ことばとりに育つ
+  ]) s = recordSighting(s, { ...c, childId: who }, { at, quote, clipId: null });
+  s.museum = graduate(s.museum, 'えべれーたー', '2026-11-20', sora);
+  saveMuseum(s.museum); saveEvents(s.events);
+  return true;
+}
 
 window.addEventListener('storage', render); // 子ども部屋で見つかったら、すぐ反映
 
@@ -522,11 +542,12 @@ function arrive() {
 }
 window.addEventListener('storage', () => { const n = unreadNow().length; if (n > shownUnread) arrive(); shownUnread = n; });
 
-// はじめて開いたとき: サンプルの子「たろう」の記録（本物の声4本）を入れておく。
+// はじめて開いたとき: 例の子（ゆい・そら。行だけ）と、サンプルの子「たろう」（本物の声4本）を入れておく。
 // 今日の分が手紙で届くように、「きのうの夜に一度ひらいた」ことにする。全部消したあとに勝手に入り直さないよう、入れたことを覚える
 let seededBefore = true;
 try { seededBefore = Boolean(localStorage.getItem('km.seeded')); } catch { /* 保存できない環境では入れない */ }
 if (!seededBefore && !loadEvents().length) {
+  seedExamples();
   await seedTaro();
   saveLastSeen(`${new Date(Date.now() - 86400000).toLocaleDateString('sv-SE')}T20:00:00`);
   try { localStorage.setItem('km.seeded', '1'); } catch { /* なにもしない */ }
