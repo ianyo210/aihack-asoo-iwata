@@ -112,3 +112,52 @@
   3. **通信・稼働効率**: 無音時は AI API を叩かず、音声テキスト流入やトリガー語検出時のみ解析を実行する 2 段階フィルタを採用する。
   4. **誤判定対策（Human-in-the-loop）**: 「話す → AI が整える → お母さんが確認して決める（博物館の収蔵承認・声かけ案の選択）」。
   5. **デモ耐障害性（フォールバック）**: 会場 Wi-Fi や外部 API が不調でも 100% 止まらず動くローカル解析フォールバック＆ワンタップ実演シナリオを備える。
+
+### Aqua Voice の API / MCP 仕様調査（2026-11-23）
+公式サイト（aquavoice.com の /api, /mcp, /docs/quickstart, /llms.txt, /notetaker）に書いてあったことだけを記録。書いていないことは「記載なし」とした。docs.aquavoice.com は DNS 解決できず、/docs は 404。未読: /docs/api（レート制限と response schema の詳細）、/docs/mcp、/docs/cli、/guide/notetaker。
+
+- **API の基本**
+  - REST のみ。Base URL は `https://api.aquavoice.com/v1`。ファイル送信は multipart/form-data。
+  - **ストリーミング（WebSocket 等）の API は記載なし**。ファイルを送る方式（同期・非同期）だけ。
+  - 認証は `Authorization: Bearer <API key>`。キーは API dashboard で作成（1アカウント最大30個）。scope を絞る場合は `dictation` と `transcription` が必要。キーはコードにもログにも書かない。
+  - 料金は秒単位課金（最小10秒）。Avalon 文字起こしは $0.39/時間、dictation は $0.49/時間。初回 $1.00 分は無料。座席料金なし。失敗した呼び出しは課金されない。
+  - レート制限の数値は記載なし。`429` のときは `Retry-After` に従う。
+- **エンドポイント**
+  - `POST /v1/audio/transcriptions`（Avalon。音声ファイルの文字起こし。1ファイル最大4時間・256 MiB）。
+  - `POST /v1/audio/transcription-jobs`（非同期ジョブ）。504 のときは `error.job_id` が返るので、重複投入せずジョブをポーリングする。
+  - `POST /v1/dictations`（**一話者・最大10分**。整形済みテキスト。他の話者の声は落ちることがある）。
+  - `GET /v1/customizations`（ユーザーの辞書・設定）、`/v1/sessions`、`/v1/me`、`/v1/health/functional`。
+- **音声ファイル**
+  - 対応形式: flac, mp3, mp4, mpeg, mpga, m4a, ogg, opus, wav, webm。
+  - 出力形式: json, text, srt, vtt, verbose_json、`diarized_json`。
+  - **「同期90分／非同期4時間」は確認できず**。ドキュメント上は「1ファイル最大4時間」。会議メモの90分は不確か。
+- **話者分離（diarize）**
+  - quickstart: 「`diarize=true` ＋ `response_format=diarized_json`」で話者ラベルが付く。
+  - 料金欄は「transcription jobs で話者ラベル」と書いており、**同期エンドポイントでも使えるか記述が食い違う**。FAQ は「dictation は一話者。話者ラベルが要るなら transcription jobs」。
+  - 話者数の指定などのパラメータは記載なし。
+- **ストリーミング入力と話者分離の同時利用**: 記載なし（ストリーミング自体が見当たらない）。
+- **遅延**: API のレイテンシは記載なし。アプリ（Mac）は、キーを離してから最終テキストまで median 365ms（2026-11-12 のテスト）。
+- **日本語・語彙・文体**
+  - dictation は50言語対応（日本語を含む）。文字起こしは言語自動検出、または ISO 639-1 のヒント指定。
+  - 文体の書き分け（Custom Instructions）や辞書は、アプリと dictation API に適用される。Avalon の文字起こしで辞書・文脈を渡すパラメータは記載なし。
+  - Deep Context（画面認識）はアプリの機能。API からの利用は記載なし。
+- **SDK・コード例**
+  - 専用 SDK は記載なし。OpenAI SDK 互換（文字起こしのみ）。
+  ```
+  OpenAI(api_key=..., base_url="https://api.aquavoice.com/v1")
+  client.audio.transcriptions.create(model="avalon-2", file=open("speech.mp3","rb"))
+  ```
+  - curl: `curl https://api.aquavoice.com/v1/audio/transcriptions -H "Authorization: Bearer $AQUA_API_KEY" -F "file=@audio.mp3" -F "model=avalon-2" -F "response_format=json"`
+- **MCP**
+  - リモート MCP サーバー `https://api.aquavoice.com/mcp`。OAuth で接続（Claude Desktop / Claude Code / ChatGPT / Cursor / VS Code などが対応）。
+  - ツールは27個。読み取り13個: `aqua_get_me`, `aqua_list_meetings`, `aqua_read_meeting`, `aqua_get_meeting_screenshot`, `aqua_list_shared_meetings`, `aqua_get_meeting_share`, `aqua_list_meeting_folders`, `aqua_list_people`, `aqua_list_dictations`, `aqua_get_dictation`, `aqua_get_dictation_screenshot`, `aqua_get_customizations`, `aqua_get_settings`。書き込み14個は、辞書・設定の更新、会議の共有・フォルダ・削除など。
+  - **MCP では音声入力（dictation）は実行できない**。会議データは OAuth サインインが必要で、**API キーでは会議を取得できない**。
+  - 別途 `aqua` CLI あり（2026-10-02 公開）。
+- **アプリ側（Notetaker）**: 議事録モード。会議のデータは MCP の `aqua_read_meeting` で Claude から読める。
+
+#### デモ構成への影響
+- ストリーミングがないので、「声検出（VAD）で区切る → 区切ったファイルを送る」方式になる。
+- 話者分離が要るので `diarize=true` ＋ `diarized_json`。使えるのが同期 `/audio/transcriptions` か非同期 `transcription-jobs` かは**デモ前に実際に試して確認する**。非同期なら待ち時間が増える。
+- 遅延の実測値がないので、**事前に区切り1本分を送って秒数を測る**。ライブが不安なら、録音済みの音声か台本で保険を用意する。
+- 子どもの高い声や言い間違いを、日本語でどこまで書き起こせるかは未検証。事前に試す。
+- 「ケンカの真相と声かけ案」と「言い間違いの意味」は Aqua でなく Claude が作る。Aqua は文字起こしと話者分離の部分。
