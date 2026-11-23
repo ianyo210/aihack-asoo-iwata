@@ -22,7 +22,7 @@ Qiita 記事の下書き（HACKATHON.md の7項目に沿う）。事実の出典
 
 AI HACK Special One-Day Hackathon（テーマ「話すだけで誰かの面倒を減らすアプリ」）で、**AquaVoice** を使って作りました。
 
-![ロゴ](https://raw.githubusercontent.com/ianyo210/aihack-asoo-iwata/main/docs/article/assets/A-1-logo.png)
+![ロゴ（アプリの画面と同じもの）](https://raw.githubusercontent.com/ianyo210/aihack-asoo-iwata/main/docs/article/assets/A-1-product-logo.png)
 
 ## 2. 解決したい困りごと
 
