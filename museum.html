@@ -3,15 +3,18 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#1F7A6D">
+<meta name="theme-color" content="#FBF6EA">
 <title>言い間違い図書館</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&family=Zen+Maru+Gothic:wght@700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Klee+One:wght@600&family=Zen+Maru+Gothic:wght@500;700&display=swap">
 <link rel="stylesheet" href="/ui.css">
 </head>
 <body>
 <main class="wrap">
   <div class="top">
-    <h1>言い間違い図書館</h1>
+    <h1 class="logo" aria-label="言い間違い図書館">
+      <span aria-hidden="true">いいま<span class="mirror">ち</span>がい<span class="l2">と<span class="tilt">し</span>ょかん</span></span>
+      <small>言い間違い図書館</small>
+    </h1>
     <a class="link" href="/room.html">子ども部屋</a>
   </div>
   <p id="summary" class="summary"></p>
@@ -46,11 +49,12 @@
 </dialog>
 
 <dialog id="sheet" class="sheet" aria-labelledby="shWord">
-  <div class="row" style="justify-content:space-between">
+  <div class="hero">
+    <div class="wreath"><img id="shStage" src="/assets/ui/05-egg.png" alt=""></div>
     <div id="shWord" class="word" tabindex="-1" autofocus></div>
-    <span id="shDone" class="tag" hidden>卒業</span>
+    <div id="shWho" class="muted"></div>
+    <span id="shDone" class="tag" hidden>卒業（飛び立ちました）</span>
   </div>
-  <div id="shWho" class="muted"></div>
 
   <label class="field">頻度</label>
   <dl id="shFreq" class="freq"></dl>
@@ -59,7 +63,7 @@
   <ul id="shLog" class="log"></ul>
 
   <label class="field" for="photoInput">写真</label>
-  <div id="shPhoto" class="photo"><span>写真はまだありません</span></div>
+  <div id="shPhoto" class="photo"></div>
   <div class="row" style="margin-top:8px">
     <label class="btn ghost" for="photoInput" style="cursor:pointer">写真をえらぶ</label>
     <button id="photoClear" class="quiet" type="button" hidden>写真をはずす</button>
@@ -98,11 +102,22 @@ const dayLabel = (d) => {
   return d === t ? '今日' : d === y ? '昨日' : null; // それ以外は日付だけを見出しにする
 };
 
-function playBtn(clipId, label = '声') {
-  const b = el('button', 'ghost mini play', label); b.type = 'button';
-  b.onclick = async (ev) => { ev.stopPropagation(); if (!(await playClip(clipId))) b.textContent = 'なし'; };
+const UI = '/assets/ui/';
+function playBtn(clipId) {
+  const b = el('button', 'play'); b.type = 'button';
+  b.append(Object.assign(el('img'), { src: UI + '08a-play.png', alt: '', width: 40, height: 40 }), el('span', 'sr', '声を聞く'));
+  b.onclick = async (ev) => { ev.stopPropagation(); if (!(await playClip(clipId))) { b.className = 'play text mini'; b.textContent = '音声なし'; } };
   return b;
 }
+
+// 言い間違いは「ことば鳥」の卵。何度も言うと孵り、育ち、卒業すると虹色の羽で飛び立つ
+function stageSrc(graduated, n) {
+  if (graduated) return UI + '07-flying-bird.png';
+  if (n >= 4) return UI + '01-bird.png';
+  if (n >= 2) return UI + '06-hatching-bird.png';
+  return UI + '05-egg.png';
+}
+const stageName = (graduated, n) => (graduated ? '卒業' : n >= 4 ? 'ことば鳥' : n >= 2 ? 'ふ化' : 'たまご');
 
 // 前の版が「確認待ち」に残したものは、確認なしで入れて空にする
 (function migrate() {
@@ -193,17 +208,22 @@ function render() {
     const d = ev.at.slice(0, 10), entry = byId.get(ev.entryId);
     if (d !== day) {
       day = d;
-      const rel = dayLabel(d), h = el('div', 'day', rel ?? `${md(d)}（${wk(d)}）`);
+      const rel = dayLabel(d), h = el('div', 'day');
+      if (d === today()) h.append(Object.assign(el('img'), { src: UI + '08d-bell.png', alt: '' })); // 今日届いたもの
+      h.append(rel ?? `${md(d)}（${wk(d)}）`);
       if (rel) h.append(el('small', '', `${md(d)}（${wk(d)}）`));
       box.append(h);
     }
     const row = el('div', 'item' + (entry.graduatedDate ? ' done' : '')); // ボタンの中にボタンを入れないよう div にする
     row.tabIndex = 0; row.setAttribute('role', 'button');
-    row.append(el('span', 'tm', hm(ev.at)), el('span', 'wd', ev.wrong));
-    if (ev.quote) row.append(el('span', 'qt', `「${ev.quote}」`));
+    const n = nthSighting(events, ev), grad = Boolean(entry.graduatedDate);
+    row.append(Object.assign(el('img', 'st'), { src: stageSrc(grad, n), alt: stageName(grad, n), width: 56, height: 56, loading: 'lazy' }));
+    const bd = el('span', 'bd');
+    bd.append(el('span', 'wd', ev.wrong));
+    if (ev.quote) bd.append(el('span', 'qt', `「${ev.quote}」`));
+    bd.append(el('span', 'mt', `${hm(ev.at)} ・ ${grad ? '卒業した言葉' : `${n}回目`}`));
+    row.append(bd);
     const rt = el('span', 'rt');
-    const n = nthSighting(events, ev);
-    rt.append(el('span', 'tag', entry.graduatedDate ? '卒業' : `${n}回目`));
     if (kids.length) {
       const k = kids.find((c) => c.id === ev.childId);
       const wb = el('button', k ? 'ghost mini' : 'mini coral', ''); wb.type = 'button';
@@ -223,7 +243,9 @@ function render() {
 let cur = null, newPhoto = null, clearPhoto = false;
 
 function showPhoto(url) {
-  $('shPhoto').replaceChildren(url ? Object.assign(el('img'), { src: url, alt: '' }) : el('span', '', '写真はまだありません'));
+  $('shPhoto').replaceChildren(...(url
+    ? [Object.assign(el('img', 'pic'), { src: url, alt: '' })]
+    : [Object.assign(el('img', 'deco'), { src: UI + '08c-leaf-photo-frame.png', alt: '' }), el('span', '', 'そのころの写真を飾れます')]));
   $('photoClear').hidden = !url;
 }
 
@@ -253,6 +275,9 @@ async function openSheet(id) {
   if (!e) return;
   cur = e; newPhoto = null; clearPhoto = false;
   $('shWord').textContent = e.wrong;
+  const total = loadEvents().filter((x) => x.entryId === e.id).length;
+  $('shStage').src = stageSrc(Boolean(e.graduatedDate), total);
+  $('shStage').alt = stageName(Boolean(e.graduatedDate), total);
   $('shDone').hidden = !e.graduatedDate;
   const k = childOf(e.childId), age = k ? ageText(k.birthday) : '';
   $('shWho').textContent = k ? `${k.name}${age ? `（${age}）` : ''}` : '';
@@ -310,7 +335,10 @@ $('seed').onclick = () => {
     [T, at('2026-11-18', '18:30:00'), 'とうもころし たべたい', yui],
     [R, at('2026-11-21', '07:20:00'), 'てびり つけて', yui],
     [T, at('2026-11-21', '18:45:00'), 'とうもころし おいしい', yui],
+    [T, at('2026-11-22', '07:50:00'), 'とうもころし ちょうだい', yui],
     [R, at('2026-11-22', '16:05:00'), 'てびり みたいなー', null], // 例: だれが言ったか未選択
+    [R, at(today(), '08:10:00'), 'てびり みて！', yui],
+    [T, at(today(), '12:30:00'), 'とうもころし また たべたい', yui], // 4回目で、卵が鳥に育つ
   ]) s = recordSighting(s, { ...c, childId: who }, { at: a, quote: q });
   s.museum = graduate(s.museum, 'えべれーたー', '2026-11-20', sora);
   saveMuseum(s.museum); saveEvents(s.events); render();

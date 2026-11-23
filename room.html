@@ -3,16 +3,20 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#1F7A6D">
+<meta name="theme-color" content="#FBF6EA">
 <title>子ども部屋 | 言い間違い図書館</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&family=Zen+Maru+Gothic:wght@700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Klee+One:wght@600&family=Zen+Maru+Gothic:wght@500;700&display=swap">
 <link rel="stylesheet" href="/ui.css">
 </head>
 <body>
 <main class="stage">
-  <div id="status" class="status" aria-live="polite">おやすみ中</div>
-  <button id="main" class="big" type="button">スタート</button>
-  <p id="hint" class="hint">おすと、おへやの こえを きくよ</p>
+  <div id="status" class="status" aria-live="polite">ことりは おやすみ中</div>
+  <button id="main" class="big" type="button">
+    <img id="bird" src="/assets/ui/09-listening-bird.png" alt="" width="240" height="241">
+    <span id="label" class="label">スタート</span>
+    <span class="notes" aria-hidden="true">♪</span>
+  </button>
+  <p id="hint" class="hint">おすと、ことりが おきるよ</p>
   <p id="note" class="note" aria-live="polite"></p>
 
   <form id="demoForm" hidden class="row" style="width:100%;max-width:420px">
@@ -20,7 +24,7 @@
     <button class="ghost" type="submit">送る</button>
   </form>
 
-  <a class="link" href="/museum.html">おかあさん用</a>
+  <a class="link" href="/museum.html">おうちのひと</a>
 </main>
 
 <script type="module">
@@ -41,12 +45,15 @@ function pickType() {
   return '';
 }
 
+// 眠る鳥（待機）→ 起きて聞く鳥（スタート中）。声が聞こえると歌う（.hearing）
+new Image().src = '/assets/ui/01-bird.png'; // 先に読み込んで、切り替えをすぐにする
 function show(listening) {
-  $('main').textContent = listening ? 'おわり' : 'スタート';
+  say($('label'), listening ? 'おわり' : 'スタート');
+  $('bird').src = listening ? '/assets/ui/01-bird.png' : '/assets/ui/09-listening-bird.png';
   $('main').classList.toggle('stop', listening);
   $('main').classList.remove('hearing');
-  say($('status'), listening ? 'きいてるよ' : 'おやすみ中');
-  say($('hint'), listening ? 'おわるときは おしてね' : 'おすと、おへやの こえを きくよ');
+  say($('status'), listening ? 'ことりが きいてるよ' : 'ことりは おやすみ中');
+  say($('hint'), listening ? 'おわるときは おしてね' : 'おすと、ことりが おきるよ');
 }
 
 // 文字 → 言い間違いの候補 → お母さんの画面へ（子どもには結果を見せない）
