@@ -45,7 +45,6 @@
 
   <div id="emptyBox" class="card" hidden>
     <div class="empty">まだ記録はありません。子ども部屋で言い間違いが見つかると、ここに届きます。</div>
-    <div class="row" style="justify-content:center"><button id="seed" class="ghost" type="button">(TEST) 例を入れる</button></div>
   </div>
 </main>
 
@@ -472,39 +471,7 @@ $('seedTaro').onclick = async () => {
   render(); arrive();
 };
 
-$('seed').onclick = async () => {
-  // デモ用の声（パソコンの読み上げで作った音声。本物の子どもの声ではない）
-  const demoClip = {};
-  for (const [w, file] of [['てびり', 'tebiri-tts.wav'], ['とうもころし', 'tomorokoshi-tts.wav']]) {
-    try { const b = await fetch(`/assets/demo/${file}`).then((r) => r.blob()); if (await putClip(`demo-${file}`, b)) demoClip[w] = `demo-${file}`; } catch { /* 声なしで続ける */ }
-  }
-  let kids = loadChildren();
-  if (!kids.length) { // 例として、子どもを2人登録する
-    kids = addChild(addChild(kids, { name: 'ゆい', birthday: '2023-07-15' }), { name: 'そら', birthday: '2021-02-01' });
-    saveChildren(kids);
-  }
-  const [yui, sora] = [kids[0]?.id ?? null, kids[1]?.id ?? kids[0]?.id ?? null];
-  let s = { museum: loadMuseum(), events: loadEvents() };
-  const T = { wrong: 'とうもころし', right: 'とうもろこし' }, E = { wrong: 'えべれーたー', right: 'エレベーター' }, R = { wrong: 'てびり', right: 'テレビ' };
-  const at = (d, t) => `${d}T${t}`;
-  for (const [c, a, q, who] of [
-    [E, at('2026-11-08', '17:40:00'), 'えべれーたー のる', sora],
-    [E, at('2026-11-12', '08:15:00'), 'えべれーたー きた', sora],
-    [T, at('2026-11-18', '18:30:00'), 'とうもころし たべたい', yui],
-    [R, at('2026-11-21', '07:20:00'), 'てびり つけて', yui],
-    [T, at('2026-11-21', '18:45:00'), 'とうもころし おいしい', yui],
-    [T, at('2026-11-22', '07:50:00'), 'とうもころし ちょうだい', yui],
-    [R, at('2026-11-22', '16:05:00'), 'てびり みたいなー', null], // 例: だれが言ったか未選択
-    [R, at(today(), '08:10:00'), 'てびり みて！', yui],
-    [T, at(today(), '12:30:00'), 'とうもころし また たべたい', yui], // 4回目で、卵が鳥に育つ
-  ]) s = recordSighting(s, { ...c, childId: who }, { at: a, quote: q, clipId: demoClip[c.wrong] ?? null });
-  s.museum = graduate(s.museum, 'えべれーたー', '2026-11-20', sora);
-  saveMuseum(s.museum); saveEvents(s.events);
-  await seedTaro();
-  // 例: きのうの夜に一度ひらいた、ということにする → 今日の分が、手紙で届く
-  saveLastSeen(`${new Date(Date.now() - 86400000).toLocaleDateString('sv-SE')}T20:00:00`);
-  render();
-};
+// 例（ゆい・そら）は外した。サンプルは、はじめて開いたときに「たろう」だけ入る（下の起動時の処理）
 
 window.addEventListener('storage', render); // 子ども部屋で見つかったら、すぐ反映
 
@@ -554,6 +521,16 @@ function arrive() {
   m.classList.remove('arrive'); void m.offsetWidth; m.classList.add('arrive');
 }
 window.addEventListener('storage', () => { const n = unreadNow().length; if (n > shownUnread) arrive(); shownUnread = n; });
+
+// はじめて開いたとき: サンプルの子「たろう」の記録（本物の声4本）を入れておく。
+// 今日の分が手紙で届くように、「きのうの夜に一度ひらいた」ことにする。全部消したあとに勝手に入り直さないよう、入れたことを覚える
+let seededBefore = true;
+try { seededBefore = Boolean(localStorage.getItem('km.seeded')); } catch { /* 保存できない環境では入れない */ }
+if (!seededBefore && !loadEvents().length) {
+  await seedTaro();
+  saveLastSeen(`${new Date(Date.now() - 86400000).toLocaleDateString('sv-SE')}T20:00:00`);
+  try { localStorage.setItem('km.seeded', '1'); } catch { /* なにもしない */ }
+}
 
 render();
 shownUnread = unreadNow().length;
