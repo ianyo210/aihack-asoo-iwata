@@ -29,8 +29,9 @@ async function readAudio(req) {
 
 function post(key, audio, type, diarize, prompt) {
   const form = new FormData();
-  const ext = /mp4|m4a|aac/.test(type) ? 'm4a' : type.includes('ogg') ? 'ogg' : type.includes('wav') ? 'wav' : type.includes('mpeg') || type.includes('mp3') ? 'mp3' : 'webm';
-  form.append('file', new Blob([audio], { type }), 'clip.' + ext);
+  const mime = String(type || 'audio/webm').split(';')[0].trim() || 'audio/webm';
+  const ext = /mp4|m4a|aac/.test(mime) ? 'm4a' : mime.includes('ogg') ? 'ogg' : mime.includes('wav') ? 'wav' : mime.includes('mpeg') || mime.includes('mp3') ? 'mp3' : 'webm';
+  form.append('file', new Blob([audio], { type: mime }), 'clip.' + ext);
   form.append('model', 'avalon-2');
   form.append('language', 'ja');
   // ヒント: この家の子がよく言う言葉。知らない言い間違いを実在の言葉に寄せる（さんとさん→ほんとさ）のを防ぐ
