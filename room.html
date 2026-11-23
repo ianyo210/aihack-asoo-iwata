@@ -25,6 +25,12 @@
   <p id="hint" class="hint">おすと、ことりが おきるよ</p>
   <p id="note" class="note" aria-live="polite"></p>
 
+  <!-- こまったとき: おうちのひとに電話（番号は、おうちのひとの画面で入れる。入っているときだけ出す） -->
+  <a id="call" class="call" href="#" hidden>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.6 10.8a15.2 15.2 0 0 0 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1A17 17 0 0 1 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1z" fill="currentColor"/></svg>
+    おうちのひとに でんわ
+  </a>
+
   <form id="demoForm" hidden class="row" style="width:100%;max-width:420px">
     <input id="demo" type="text" value="てびり みたいなー" aria-label="デモ用: 子どもが言った言葉" style="flex:1;min-width:0">
     <button class="ghost" type="submit">(TEST) おくる</button>
@@ -34,8 +40,11 @@
 </main>
 
 <script type="module">
-import { recordCandidates, putClip, loadMuseum } from '/lib/store.js';
-import { familyDictionary } from '/lib/mistakes.js';
+import { recordCandidates, putClip, loadMuseum, loadTel } from '/lib/store.js';
+import { familyDictionary, telHref } from '/lib/mistakes.js';
+// こまったときの「でんわ」ボタン（番号があるときだけ）
+const callHref = telHref(loadTel());
+if (callHref) { document.getElementById('call').href = callHref; document.getElementById('call').hidden = false; }
 // この家の子がよく言う言葉（図書館に入った言葉＋既知の言い間違い）。Aqua へのヒントと、判定の辞書に使う
 const familyWords = () => familyDictionary(loadMuseum()).map((d) => d.wrong);
 const museumLite = () => loadMuseum().map(({ id, wrong, right, graduatedDate }) => ({ id, wrong, right, graduatedDate }));

@@ -5,7 +5,7 @@ import {
   toHiragana, normalizeTranscript, detectByRules, sanitizeCandidates, detectMistakes,
   registerEntry, graduate, findGraduationHints, updateEntry, removeEntry,
   recordSighting, frequencyOf, nthSighting,
-  attributeSpeakers, addChild, updateChild, removeChild, ageText, defaultChildId, assignChild, CHILD_LIMIT, unreadSince, familyDictionary, hintPrompt,
+  attributeSpeakers, addChild, updateChild, removeChild, ageText, defaultChildId, assignChild, CHILD_LIMIT, unreadSince, familyDictionary, hintPrompt, telHref,
 } from '../lib/mistakes.js';
 import { detectByGemini } from '../lib/gemini.js';
 import { detectByOpenRouter } from '../lib/openrouter.js';
@@ -296,6 +296,17 @@ test('hintPrompt: Aqua に渡すヒントの文', () => {
   assert.equal(hintPrompt(['さんとさん', 'てびり', 'さんとさん', '']), 'この子がよく言う言葉: さんとさん、てびり');
   assert.equal(hintPrompt([]), '');
   assert.ok(hintPrompt(Array.from({ length: 100 }, (_, i) => `ことば${i}`)).length <= 400);
+});
+
+test('telHref: 電話番号を tel: リンクに（全角・ハイフン・空白も整える）', () => {
+  assert.equal(telHref('090-1234-5678'), 'tel:09012345678');
+  assert.equal(telHref('０９０ １２３４ ５６７８'), 'tel:09012345678');
+  assert.equal(telHref('+81 90-1234-5678'), 'tel:+819012345678');
+  assert.equal(telHref('110'), 'tel:110');
+  assert.equal(telHref(''), '');
+  assert.equal(telHref('12'), '');           // 短すぎる
+  assert.equal(telHref('でんわ'), '');
+  assert.equal(telHref('javascript:alert(1)'), ''); // 数字が1つだけなので、リンクにしない
 });
 
 // ---- Gemini（本物は呼ばない。fetch を差し替える）----

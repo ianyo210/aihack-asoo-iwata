@@ -29,9 +29,7 @@
   <p id="summary" class="summary"></p>
   <div id="kidsBar" class="chips" role="group" aria-label="子どもで絞り込む"></div>
   <div class="row" style="margin-top:8px">
-    <button id="addVoice" class="quiet" type="button">録音ファイルから入れる</button>
     <button id="seedTaro" class="quiet" type="button">(TEST) たろうのサンプルを入れる</button>
-    <input id="voiceFile" type="file" accept="audio/*" hidden>
     <span id="voiceMsg" class="muted" aria-live="polite"></span>
   </div>
 
@@ -76,6 +74,9 @@
   <h2 id="kidsTitle" style="font:700 18px var(--font-head);margin:0" tabindex="-1" autofocus>子どもの情報</h2>
   <p class="muted" style="margin:4px 0 0">6人まで登録できます。誰が言ったかを分けて、頻度を数えます。</p>
   <div id="kidsList"></div>
+  <label class="field" for="parentTel">おうちのひとの電話番号</label>
+  <input id="parentTel" type="tel" inputmode="tel" autocomplete="tel" maxlength="30" placeholder="例: 090-1234-5678">
+  <p class="muted" style="margin:4px 0 0">入れると、子ども部屋に「おうちのひとに でんわ」のボタンが出ます。この端末のブラウザの中だけに保存します。</p>
   <label class="field" for="kidName">子どもを追加</label>
   <div class="row grow">
     <input id="kidName" type="text" maxlength="12" placeholder="名前（例: ゆい）" autocomplete="off">
@@ -133,6 +134,8 @@
 
 <script type="module">
 import { recordSighting, updateEntry, removeEntry, frequencyOf, nthSighting, graduate, assignChild, addChild, updateChild, removeChild, ageText, CHILD_LIMIT, unreadSince, familyDictionary } from '/lib/mistakes.js';
+import { telHref } from '/lib/mistakes.js';
+import { loadTel, saveTel } from '/lib/store.js';
 import { loadMuseum, saveMuseum, loadEvents, saveEvents, loadChildren, saveChildren, loadPending, savePending, loadLastSeen, saveLastSeen, nowLocal, today, playClip, putClip, resizeImage, imageUrl, recordCandidates } from '/lib/store.js';
 const $ = (id) => document.getElementById(id);
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
@@ -203,7 +206,12 @@ function renderKids(events) {
   const set = el('button', 'chip quietchip', '子どもの情報'); set.type = 'button'; set.onclick = openKids; bar.append(set);
 }
 
-function openKids() { renderKidsList(); $('kidMsg').textContent = ''; $('kids').showModal(); }
+function openKids() { renderKidsList(); $('kidMsg').textContent = ''; $('parentTel').value = loadTel(); $('kids').showModal(); }
+$('parentTel').onchange = () => {
+  const v = $('parentTel').value.trim();
+  if (v && !telHref(v)) { $('kidMsg').textContent = '電話番号の形を確かめてください'; return; }
+  saveTel(v); $('kidMsg').textContent = v ? '電話番号を保存しました' : '電話番号を消しました';
+};
 
 function renderKidsList() {
   const kids = loadChildren(), box = $('kidsList'); box.replaceChildren();
@@ -502,8 +510,8 @@ window.addEventListener('storage', render); // 子ども部屋で見つかった
 
 // ---- 録音ファイルから入れる（スマホの録音アプリの声など）。見つからなければ、聞こえたとおりに手で登録 ----
 let manClip = null, manHeard = '';
-$('addVoice').onclick = () => $('voiceFile').click();
-$('voiceFile').onchange = async (ev) => {
+// 画面のボタンは外した（不要）。手で登録する画面の仕組みは、のちに使えるよう残す
+if ($('voiceFile')) $('voiceFile').onchange = async (ev) => {
   const f = ev.target.files?.[0]; ev.target.value = ''; if (!f) return;
   const clipId = `c-${Date.now()}`;
   await putClip(clipId, f); // 声はブラウザの中に残す（あとで聞き返せる）

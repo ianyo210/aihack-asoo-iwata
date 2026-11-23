@@ -302,3 +302,10 @@ button:active,.btn:active{transform:translateY(1px);box-shadow:none}
 /* 便箋・詳細シートは、角を素直に */
 .paper{border-radius:6px}
 .photo{border-radius:8px}
+
+/* 子ども部屋: こまったときの「でんわ」ボタン */
+.call{display:inline-flex;align-items:center;gap:10px;min-height:56px;padding:10px 24px;border-radius:99px;
+  background:var(--rose);color:var(--on-accent);text-decoration:none;font:400 22px/1.2 var(--font-head)}
+.call svg{width:26px;height:26px;flex:none}
+.call:active{transform:translateY(1px)}
+.call:focus-visible{outline:3px solid var(--sun);outline-offset:3px}
