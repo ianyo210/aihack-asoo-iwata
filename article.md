@@ -10,7 +10,7 @@ Qiita 記事の下書き（HACKATHON.md の7項目に沿う）。事実の出典
 # 言い間違い図書館 〜卒業する前に、声で残す〜
 
 <!-- 見出し画像: docs/article/assets/A-2-hero.png（1200×630。Qiita にアップロードして貼る）。AI 生成のイラストを含む -->
-![言い間違い図書館](docs/article/assets/A-2-hero.png)
+![言い間違い図書館](https://raw.githubusercontent.com/ianyo210/aihack-asoo-iwata/main/docs/article/assets/A-2-hero.png)
 
 > 「てビリ」と言っていたあの子の声を、卒業の日まで、声のまま残しておく。
 
@@ -22,7 +22,7 @@ Qiita 記事の下書き（HACKATHON.md の7項目に沿う）。事実の出典
 
 AI HACK Special One-Day Hackathon（テーマ「話すだけで誰かの面倒を減らすアプリ」）で、**AquaVoice** を使って作りました。
 
-<!-- 画像: A-2-hero.png（見出し）、A-1-logo.png -->
+![ロゴ](https://raw.githubusercontent.com/ianyo210/aihack-asoo-iwata/main/docs/article/assets/A-1-logo.png)
 
 ## 2. 解決したい困りごと
 
@@ -61,7 +61,22 @@ AI HACK Special One-Day Hackathon（テーマ「話すだけで誰かの面倒�
 
 使うと何が変わるか: 手を止めずに、「気づいたときには消えていた」ことばを、声のまま取り戻せます。
 
-<!-- 画像: S-3-timeline.png、S-4-filter-kid.png、S-5-detail-frequency.png、S-6-detail-edit.png -->
+以下の画面は、**例のデータを入れた、実際のアプリの画面**です（実機のマイクで録ったものではありません。登場する子どもの名前は、仮名です）。
+
+お父さん・お母さん側の画面。柱の背比べのような物差しに、日付ごとに言い間違いが並びます。上には、ことばとりが運んできた「おてがみ」。
+![時系列の一覧（物差し）](https://raw.githubusercontent.com/ianyo210/aihack-asoo-iwata/main/docs/article/assets/S-3-timeline.png)
+
+子どもごとに絞り込めます。
+![子どもで絞り込んだ一覧](https://raw.githubusercontent.com/ianyo210/aihack-asoo-iwata/main/docs/article/assets/S-4-filter-kid.png)
+
+言葉を開くと、頻度と、聞いた記録が出ます。
+![詳細：頻度と聞いた記録](https://raw.githubusercontent.com/ianyo210/aihack-asoo-iwata/main/docs/article/assets/S-5-detail-frequency.png)
+
+詳細の下では、写真・訂正・卒業日を入れられます。
+![詳細：写真・訂正・卒業日](https://raw.githubusercontent.com/ianyo210/aihack-asoo-iwata/main/docs/article/assets/S-6-detail-edit.png)
+
+言い間違いは、ことばとりの卵。何度も言うと孵って、育って、卒業すると飛び立ちます。
+![ことばとりの成長](https://raw.githubusercontent.com/ianyo210/aihack-asoo-iwata/main/docs/article/assets/M-3-bird-growth.gif)
 
 ## 4. アプリの使い方
 
@@ -72,9 +87,21 @@ AI HACK Special One-Day Hackathon（テーマ「話すだけで誰かの面倒�
 5. お母さんは、物差しの一覧を見るだけ。気になった言葉を開くと、頻度が出て、声のクリップを聞き返せる。
 6. 必要なときだけ、「だれ?」の選択、訂正、卒業日、写真を入れる。
 
-<!-- 画像: S-1-room-idle.png、S-2-room-listening.png、動画: M-1-flow（GIF） -->
+子ども側の画面は、大きな「スタート」と「おわり」だけです。
+![子ども側：スタート](https://raw.githubusercontent.com/ianyo210/aihack-asoo-iwata/main/docs/article/assets/S-1-room-idle.png)
+![子ども側：きいてるよ](https://raw.githubusercontent.com/ianyo210/aihack-asoo-iwata/main/docs/article/assets/S-2-room-listening.png)
 
-※ 記事の動画・画像は、実機のマイクで録ったものではありません。【動画の作り方に合わせて、どれか1つを書く: 「実際の画面を録画したもの（例のデータ入り）」／「画面の入力欄から文章を送って代用したもの」／「操作のイメージ（実際の画面の録画ではない）」】
+操作の流れ（お父さん・お母さん側）。
+![操作の流れ](https://raw.githubusercontent.com/ianyo210/aihack-asoo-iwata/main/docs/article/assets/M-1-flow.gif)
+
+「声」ボタンで、本当の発音を聞き返せます。
+![声を聞き返す](https://raw.githubusercontent.com/ianyo210/aihack-asoo-iwata/main/docs/article/assets/M-2-listen-clip.gif)
+
+子どもの登録と、「だれ?」の選択。
+![子どもの情報](https://raw.githubusercontent.com/ianyo210/aihack-asoo-iwata/main/docs/article/assets/S-7-kids-settings.png)
+![だれ?の選択](https://raw.githubusercontent.com/ianyo210/aihack-asoo-iwata/main/docs/article/assets/S-8-who-picker.png)
+
+※ 画面と GIF は、例のデータを入れた実際のアプリの画面です。実機のマイクで録ったものではありません。
 
 ## 5. AquaVoice・AI の活用方法
 
@@ -162,7 +189,7 @@ flowchart LR
 - 文字起こしのために、**音声は Aqua Voice に、判定のために文字は AI に送られます**。「外部に出さない」とは言えません。
 - 確認できていないこと:
   - 本物の子どもの声は、**4本だけ**試した。**2人以上の子どもが話す場面の話者分離は、本物の声では未確認**（機械音声の2人は、どちらも同じ話者と判定された）。
-  - 実機のスマホでの録音（マイクは HTTPS が必要。Vercel に置いて初めて試せる）。【試せたら書き換える】
+  - 実機のスマホでの録音（マイクは HTTPS が必要。Vercel に置いて初めて試せる）。
   - 写真の追加、2台の端末にまたがる共有。
 
 ## 7. 今後の展望
